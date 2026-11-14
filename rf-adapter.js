@@ -271,12 +271,12 @@
     }, function () { return false; });
   }
 
-  function proceed() {
+  function consentGate() { if (ST.admin || ST.consent) return Promise.resolve(); var fs = FB.fs, cref = fs.doc(ST.db, 'clients', ST.uid); return fs.getDoc(cref).then(function (s) { var d = s.exists() ? (s.data() || {}) : {}; if (d.consent) ST.consent = d.consent; }, function () {}).then(function () { if (ST.consent) return; return new Promise(function (res) { show('<h1>Our privacy terms</h1><p>RespondFit now has a Privacy Policy that explains how we collect, use and protect your information, including your health and fitness data. Please read it and agree to keep using the app.</p><label class="rfcb" for="rfok"><input id="rfok" type="checkbox"><span>I have read and agree to the <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>, and I consent to RespondFit collecting my health and fitness information to provide the app.</span></label><p class="rfm" id="rfm" role="status" aria-live="polite"></p><button class="rfp" id="rfgo">Continue</button><div class="rfx"><button class="rfk" id="rfso">Sign out</button></div>'); ready$('rfso').onclick = window.RFA.signOut; ready$('rfgo').onclick = function () { if (!ready$('rfok').checked) { msg('Please tick the box to agree to the Privacy Policy.'); return; } ST.consent = { privacy: 'v1', at: Date.now() }; fs.setDoc(cref, { consent: ST.consent }, { merge: true }).catch(function () {}); res(); }; }); }); }  function proceed() {
     return checkAccess().then(function () {
       return ensureProfile().then(dropAdminStub);
     }).then(function () {
       if (!ST.paid) { showPaywall(); return; }
-      return restoreIfEmpty().then(function (r) {
+      return consentGate().then(restoreIfEmpty).then(function (r) {
         if (r) { location.reload(); return; }
         resolved = true; hide(); okRes();
       });
