@@ -1,11 +1,11 @@
 /* RespondFit settings. Paste the values from your Firebase project here (see SETUP-GUIDE.txt, step 3). */
 window.RF_CONFIG = {
-  apiKey: "PASTE_API_KEY",
-  authDomain: "PASTE_PROJECT_ID.firebaseapp.com",
-  projectId: "PASTE_PROJECT_ID",
-  storageBucket: "PASTE_PROJECT_ID.firebasestorage.app",
-  messagingSenderId: "PASTE_SENDER_ID",
-  appId: "PASTE_APP_ID"
+  apiKey: "AIzaSyBJ2X7ioiyWtZwyrQuT14U7YGxuUfLXAHU",
+  authDomain: "respondfit-f9a04.firebaseapp.com",
+  projectId: "respondfit-f9a04",
+  storageBucket: "respondfit-f9a04.firebasestorage.app",
+  messagingSenderId: "1036227946725",
+  appId: "1:1036227946725:web:597b2772c4c66807938c0c"
 };
 /* Where people pay. Shown on the "membership not active" screen. */
 window.RF_STRIPE = {
