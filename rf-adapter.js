@@ -23,7 +23,7 @@
       var done = function () { location.reload(); };
       try { FB.auth.signOut(ST.auth).then(done, done); } catch (e) { done(); }
     },
-    email: function () { return ST.user ? (ST.user.email || '') : ''; }
+    email: function () { return ST.user ? (ST.user.email || '') : ''; }, consent: function () { return ST.consent || null; }
   };
 
   /* ---------- Firestore does not allow arrays inside arrays; wrap them ---------- */
@@ -135,7 +135,7 @@
       '#rfgate .rfp{width:100%;margin-top:16px;padding:14px;border:0;border-radius:999px;background:#FF7A00;color:#0F1B2D;font-size:16px}#rfgate .rfp[disabled]{opacity:.6}' +
       '#rfgate .rfs{display:block;width:100%;margin-top:10px;padding:13px;border:2px solid #0F1B2D;border-radius:999px;background:#fff;color:#0F1B2D;font-size:16px;text-align:center;text-decoration:none;box-sizing:border-box}' +
       '#rfgate .rfk{background:none;border:0;color:#B34F00;text-decoration:underline;padding:6px 0;font-size:15px}#rfgate .rfm{min-height:20px;margin:10px 0 0;font-size:14px;color:#B42318}#rfgate .rfm.ok{color:#067647}' +
-      '#rfgate .rfx{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;margin-top:10px}';
+      '#rfgate .rfcb{display:flex;gap:10px;align-items:flex-start;font-weight:500;font-size:14px;line-height:1.45;margin:16px 0 0;color:#3D4552}#rfgate .rfcb input{width:20px;height:20px;flex:0 0 20px;margin:1px 0 0;padding:0;accent-color:#FF7A00}#rfgate .rfcb a{color:#B34F00}' + '#rfgate .rfx{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;margin-top:10px}';
     document.head.appendChild(s);
   }
   function setInert(on) {
@@ -181,7 +181,7 @@
       (up ? '<label for="rfn">Your name</label><input id="rfn" autocomplete="name" maxlength="60">' : '') +
       '<label for="rfe">Email</label><input id="rfe" type="email" autocomplete="email" inputmode="email" autocapitalize="off">' +
       (rs ? '' : '<label for="rfpw">Password' + (up ? ' (8 or more characters)' : '') + '</label><input id="rfpw" type="password" autocomplete="' + (up ? 'new-password' : 'current-password') + '">') +
-      '<p class="rfm' + (note ? ' ok' : '') + '" id="rfm" role="status" aria-live="polite">' + esc(note || '') + '</p>' +
+      (up ? '<label class="rfcb" for="rfok"><input id="rfok" type="checkbox"><span>I have read and agree to the <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>, and I consent to RespondFit collecting my health and fitness information to provide the app.</span></label>' : '') + '<p class="rfm' + (note ? ' ok' : '') + '" id="rfm" role="status" aria-live="polite">' + esc(note || '') + '</p>' +
       '<button class="rfp" id="rfgo" type="submit">' + (up ? 'Create account' : rs ? 'Send reset link' : 'Sign in') + '</button></form>' +
       '<div class="rfx">' + (rs ? '<button class="rfk" id="rfa">Back to sign in</button>' :
         (up ? '<button class="rfk" id="rfa">I already have an account</button>' : '<button class="rfk" id="rfa">Create an account</button><button class="rfk" id="rfr">Forgot password?</button>')) + '</div>');
@@ -193,7 +193,7 @@
       if (!em) { msg('Enter your email.'); return; }
       if (up && !nm) { msg('Enter your name.'); return; }
       if (!rs && !pw) { msg('Enter your password.'); return; }
-      if (up && pw.length < 8) { msg('Choose a password with at least 8 characters.'); return; }
+      if (up && pw.length < 8) { msg('Choose a password with at least 8 characters.'); return; } if (up && !(ready$('rfok') && ready$('rfok').checked)) { msg('Please tick the box to agree to the Privacy Policy.'); return; } if (up) ST.consentAt = Date.now();
       var b = ready$('rfgo'); b.disabled = true; msg('');
       var A = FB.auth, p;
       if (rs) p = A.sendPasswordResetEmail(ST.auth, em).then(function () { mode = 'in'; showSignIn('If that email has an account, a reset link is on its way.'); return 'stop'; });
@@ -248,7 +248,7 @@
     nameCache[ST.uid] = n;
     var p1 = fs.setDoc(fs.doc(ST.db, 'profiles', ST.uid), { name: n }).catch(function () {});
     var cref = fs.doc(ST.db, 'clients', ST.uid);
-    var p2 = ST.admin ? Promise.resolve() : fs.getDoc(cref).then(function (s) { if (!s.exists()) return fs.setDoc(cref, { email: ST.user.email || '', profile: { name: n }, updated: Date.now() }); }).catch(function () {});
+    var p2 = ST.admin ? Promise.resolve() : fs.getDoc(cref).then(function (s) { var d = s.exists() ? (s.data() || {}) : null; if (d && d.consent) ST.consent = d.consent; if (!ST.consent && ST.consentAt) ST.consent = { privacy: 'v1', at: ST.consentAt }; if (!d) return fs.setDoc(cref, { email: ST.user.email || '', profile: { name: n }, consent: ST.consent || null, updated: Date.now() }); if (ST.consent && !d.consent) return fs.setDoc(cref, { consent: ST.consent }, { merge: true }); }).catch(function () {});
     return Promise.all([p1, p2]);
   }
   function dropAdminStub() {
