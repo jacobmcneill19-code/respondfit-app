@@ -8912,30 +8912,43 @@ function gpsOpen(id){const o=gpsRoutes()[id],h=(RUN().hist||[]).find(x=>x.id===i
 function gpsPace(){const n=GT.pts.length;if(n<2)return '–';const T=GT.pts[n-1][3];let i=n-1,d=0;while(i>0&&T-GT.pts[i-1][3]<=40000){d+=gHav(GT.pts[i-1],GT.pts[i]);i--}const dt=(T-GT.pts[i][3])/1000;if(d<20||dt<8)return GT.dist>50?fP(gpsEl()/60000/(GT.dist/1000)):'–';const m=dt/60/(d/1000);return m>0&&m<30?fP(m):'–'}
 function gpsTick(){if(page==='running'&&RT.tab==='gps')gpsUi(true);if(GT.st==='run'&&(++GT.sv%15===0))gpsSnap()}
 function gpsUi(){const t=document.getElementById('gt-t');if(t&&gpsActive()){t.textContent=fT(gpsEl()/1000);const set=(i,v)=>{const e=document.getElementById(i);if(e)e.textContent=v};set('gt-d',(IMP()?(GT.dist/1609.344):(GT.dist/1000)).toFixed(2));set('gt-p',gpsPace());set('gt-e',fE(GT.gain));set('gt-s',GT.msg||(GT.st==='run'?'Tracking · GPS accuracy ±'+Math.round(GT.acc||0)+' m':'Paused'));const cv=document.getElementById('gcv');if(cv)gpsLiveMap(cv)}}
-function gpsLiveMap(cv){const x=cv.getContext('2d'),W=cv.width,H=cv.height;x.clearRect(0,0,W,H);gpsGrid(x,0,0,W,H);if(GT.pts.length>1)gpsRoute(x,GT.pts,{x:20,y:20,w:W-40,h:H-40},6)}
+function gpsLiveMap(cv){const x=cv.getContext('2d'),W=cv.width,H=cv.height;x.clearRect(0,0,W,H);gpsGrid(x,0,0,W,H);let mp=null;try{mp=gpsMap(GT.pts,{x:0,y:0,w:W,h:H},.7)}catch(e){}if(mp){mp.draw(x);if(mp.pend())mp.whenLoaded(()=>{if(cv.isConnected)gpsLiveMap(cv)})}if(GT.pts.length>1)gpsRoute(x,GT.pts,{x:20,y:20,w:W-40,h:H-40},6,mp)}
+const MB=()=>window.RF_MAPBOX&&RF_MAPBOX.token?RF_MAPBOX:null,gpsImgs=new Map();
+function gpsTile(z,X,Y){const m=MB(),u='https://api.mapbox.com/styles/v1/mapbox/'+(m.style||'dark-v11')+'/tiles/256/'+z+'/'+X+'/'+Y+'@2x?access_token='+encodeURIComponent(m.token);let e=gpsImgs.get(u);if(!e){e={ok:0,cbs:[],img:new Image()};e.img.crossOrigin='anonymous';e.img.onload=()=>{e.ok=1;e.cbs.splice(0).forEach(f=>f())};e.img.onerror=()=>{e.ok=-1;e.cbs.splice(0).forEach(f=>f())};e.img.src=u;gpsImgs.set(u,e)}return e}
+function gpsMap(pts,b,pad){if(!MB()||!pts||pts.length<2)return null;
+ const mx=lo=>(lo+180)/360,my=la=>{const q=Math.sin(Math.max(-85,Math.min(85,la))*Math.PI/180);return .5-Math.log((1+q)/(1-q))/(4*Math.PI)};
+ let x0=1,x1=0,y0=1,y1=0;pts.forEach(p=>{const X=mx(p[1]),Y=my(p[0]);x0=Math.min(x0,X);x1=Math.max(x1,X);y0=Math.min(y0,Y);y1=Math.max(y1,Y)});
+ const w=Math.max(x1-x0,1e-7),h=Math.max(y1-y0,1e-7),zf=Math.min(17.5,Math.log2(Math.min(b.w*(pad||.8)/(w*256),b.h*(pad||.8)/(h*256)))),sc=256*Math.pow(2,zf),cx=(x0+x1)/2*sc,cy=(y0+y1)/2*sc,L=cx-b.w/2,T=cy-b.h/2,tz=Math.max(0,Math.min(17,Math.floor(zf))),ts=sc/Math.pow(2,tz),N=Math.pow(2,tz);
+ const tl=[];for(let ty=Math.floor(T/ts);ty<=Math.floor((T+b.h)/ts);ty++)for(let tx=Math.floor(L/ts);tx<=Math.floor((L+b.w)/ts);tx++){if(ty<0||ty>=N)continue;tl.push({tx,ty,e:gpsTile(tz,((tx%N)+N)%N,ty)})}
+ const o={proj:p=>[b.x+mx(p[1])*sc-L,b.y+my(p[0])*sc-T],pend:()=>tl.some(t=>t.e.ok===0),
+  whenLoaded(f){let n=0;const chk=()=>{if(--n<=0)f()};tl.forEach(t=>{if(t.e.ok===0){n++;t.e.cbs.push(chk)}});if(!n)f()},
+  draw(x){x.save();x.beginPath();x.rect(b.x,b.y,b.w,b.h);x.clip();x.fillStyle='#10182A';x.fillRect(b.x,b.y,b.w,b.h);tl.forEach(t=>{if(t.e.ok===1)x.drawImage(t.e.img,b.x+t.tx*ts-L,b.y+t.ty*ts-T,ts+.6,ts+.6)});
+   const fs=Math.max(11,Math.round(b.w/60));x.font='500 '+fs+'px system-ui,sans-serif';x.textAlign='left';x.fillStyle='rgba(255,255,255,.7)';x.fillText('© Mapbox © OpenStreetMap',b.x+8,b.y+b.h-8);x.restore()}};return o}
 function gpsGrid(x,X,Y,W,H){x.save();x.strokeStyle='rgba(255,255,255,.06)';x.lineWidth=1;for(let i=1;i<8;i++){x.beginPath();x.moveTo(X+W*i/8,Y);x.lineTo(X+W*i/8,Y+H);x.stroke();x.beginPath();x.moveTo(X,Y+H*i/8);x.lineTo(X+W,Y+H*i/8);x.stroke()}x.restore()}
-function gpsRoute(x,pts,b,lw){let a=90,A=-90,o=180,O=-180;pts.forEach(p=>{a=Math.min(a,p[0]);A=Math.max(A,p[0]);o=Math.min(o,p[1]);O=Math.max(O,p[1])});
+function gpsRoute(x,pts,b,lw,mp){let a=90,A=-90,o=180,O=-180;pts.forEach(p=>{a=Math.min(a,p[0]);A=Math.max(A,p[0]);o=Math.min(o,p[1]);O=Math.max(O,p[1])});
  const k=Math.cos((a+A)/2*Math.PI/180),w=Math.max((O-o)*k,1e-6),h=Math.max(A-a,1e-6),s=Math.min(b.w/w,b.h/h),ox=b.x+(b.w-w*s)/2,oy=b.y+(b.h-h*s)/2;
- const P=pts.map(p=>[ox+(p[1]-o)*k*s,oy+(A-p[0])*s]);x.save();x.lineJoin='round';x.lineCap='round';
+ const P=mp?pts.map(mp.proj):pts.map(p=>[ox+(p[1]-o)*k*s,oy+(A-p[0])*s]);x.save();x.lineJoin='round';x.lineCap='round';
  const path=()=>{x.beginPath();P.forEach((q,i)=>i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]))};
  x.strokeStyle='rgba(255,138,31,.28)';x.lineWidth=lw*2.8;path();x.stroke();x.strokeStyle='#FF8A1F';x.lineWidth=lw;path();x.stroke();
  const dot=(q,c,r)=>{x.fillStyle=c;x.beginPath();x.arc(q[0],q[1],r,0,7);x.fill();x.strokeStyle='#0B1422';x.lineWidth=lw*.6;x.stroke()};dot(P[0],'#3DD68C',lw*1.5);dot(P[P.length-1],'#FFFFFF',lw*1.5);x.restore()}
 function gpsTrim(pts,m){if(pts.length<4)return pts;const c=[0];for(let i=1;i<pts.length;i++)c.push(c[i-1]+gHav(pts[i-1],pts[i]));const T=c[c.length-1];if(T<3*m)return pts;const r=pts.filter((p,i)=>c[i]>=m&&c[i]<=T-m);return r.length>=2?r:pts}
 const gpsName=t=>{const h=new Date(t).getHours();return(h<5?'Night':h<12?'Morning':h<17?'Afternoon':h<21?'Evening':'Night')+' run'};
-function gpsShareImg(cv,s,trim){const x=cv.getContext('2d'),W=1080,H=1350;cv.width=W;cv.height=H;
+function gpsShareImg(cv,s,trim,mp){const x=cv.getContext('2d'),W=1080,H=1350;cv.width=W;cv.height=H;
  const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#0B1422');g.addColorStop(1,'#16243B');x.fillStyle=g;x.fillRect(0,0,W,H);
  const F='"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif',T=(s2,px,wt,col,xx,yy,al)=>{x.font=wt+' '+px+'px '+F;x.fillStyle=col;x.textAlign=al||'left';x.fillText(s2,xx,yy)};
  x.save();x.font='700 34px '+F;if('letterSpacing' in x)x.letterSpacing='6px';x.fillStyle='#FF8A1F';x.textAlign='left';x.fillText('RESPONDFIT',70,100);if('letterSpacing' in x)x.letterSpacing='0px';x.restore();
  T(new Date(s.t0||Date.now()).toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long',year:'numeric'}),30,'400','#9BA8BD',W-70,100,'right');
  T(gpsName(s.t0||Date.now()),68,'700','#EEF2F8',70,190);
  x.fillStyle='rgba(255,255,255,.04)';x.beginPath();if(x.roundRect)x.roundRect(70,230,940,620,28);else x.rect(70,230,940,620);x.fill();gpsGrid(x,70,230,940,620);
- const pts=trim?gpsTrim(s.pts,200):s.pts;if(pts.length>1)gpsRoute(x,pts,{x:130,y:290,w:820,h:500},12);
+ const pts=trim?gpsTrim(s.pts,200):s.pts;if(mp){x.save();x.beginPath();if(x.roundRect)x.roundRect(70,230,940,620,28);else x.rect(70,230,940,620);x.clip();mp.draw(x);x.restore()}if(pts.length>1)gpsRoute(x,pts,{x:130,y:290,w:820,h:500},12,mp);
  if(trim&&pts!==s.pts)T('Start and end hidden',24,'400','#9BA8BD',990,832,'right');
  const dv=IMP()?s.km*0.621371:s.km,du=IMP()?'mi':'km';T(dv.toFixed(2),170,'700','#EEF2F8',70,1030);x.font='700 170px '+F;const dw=x.measureText(dv.toFixed(2)).width;T(du,56,'400','#9BA8BD',70+dw+16,1030);
  const cols=[['TIME',fT(s.sec)],['AVG PACE',s.km>0.01?fP(s.sec/60/s.km):'–'],['ELEVATION',fE(s.gain||0)]];cols.forEach((c,i)=>{const X=70+i*320;T(c[0],26,'600','#9BA8BD',X,1110);T(c[1],58,'700','#EEF2F8',X,1175)});
  const el=s.pts.filter(p=>p[2]!=null);if(el.length>3){let lo=1e9,hi=-1e9;el.forEach(p=>{lo=Math.min(lo,p[2]);hi=Math.max(hi,p[2])});const rng=Math.max(hi-lo,10),bx=70,by=1215,bw=940,bh=60;x.beginPath();x.moveTo(bx,by+bh);el.forEach((p,i)=>x.lineTo(bx+bw*i/(el.length-1),by+bh-(p[2]-lo)/rng*bh));x.lineTo(bx+bw,by+bh);x.closePath();x.fillStyle='rgba(255,138,31,.25)';x.fill();x.beginPath();el.forEach((p,i)=>{const X=bx+bw*i/(el.length-1),Y=by+bh-(p[2]-lo)/rng*bh;i?x.lineTo(X,Y):x.moveTo(X,Y)});x.strokeStyle='#FF8A1F';x.lineWidth=3;x.stroke()}
  T('respondfitapp.com',26,'400','#9BA8BD',W/2,1318,'center')}
-function gpsBlob(s,trim){return new Promise(res=>{const cv=document.createElement('canvas');gpsShareImg(cv,s,trim);cv.toBlob(b=>res(b),'image/png')})}
+const gpsMapFor=(s,trim)=>gpsMap(trim?gpsTrim(s.pts,200):s.pts,{x:70,y:230,w:940,h:620},.72);
+function gpsBlob(s,trim){const mk=mp=>new Promise(res=>{try{const cv=document.createElement('canvas');gpsShareImg(cv,s,trim,mp);cv.toBlob(b=>res(b),'image/png')}catch(e){res(null)}});
+ return new Promise(async res=>{let mp=null;try{mp=gpsMapFor(s,trim)}catch(e){}if(mp&&mp.pend())await new Promise(r=>{const t=setTimeout(r,7000);mp.whenLoaded(()=>{clearTimeout(t);r()})});let b=await mk(mp);if(!b&&mp)b=await mk(null);res(b)})}
 async function gpsShare(){const s=GT.sum;if(!s)return;const b=await gpsBlob(s,GT.trim);if(!b)return;const f=new File([b],'respondfit-run.png',{type:'image/png'});
  try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'My run',text:fD(s.km)+' in '+fT(s.sec)});return}}catch(e){if(e&&e.name==='AbortError')return}
  gpsDownload(b)}
@@ -8950,7 +8963,7 @@ function gpsWire(){if(RT.tab!=='gps')return;const B=(i,f)=>{const e=document.get
  B('gfs',()=>{if(gpsLoad()){GT.st='pause';GT.seg=0;gpsFinish()}});B('gpa',gpsPause);B('gfi',()=>{if(confirm('Finish this run?'))gpsFinish()});
  document.querySelectorAll('[data-gv]').forEach(b=>b.onclick=()=>gpsOpen(+b.dataset.gv));
  const cv=document.getElementById('gcv');if(cv)gpsLiveMap(cv);
- const sc=document.getElementById('gsc');if(sc&&GT.sum){gpsShareImg(sc,GT.sum,GT.trim);const tr=document.getElementById('gtr');if(tr)tr.onchange=()=>{GT.trim=tr.checked;gpsShareImg(sc,GT.sum,GT.trim)};
+ const sc=document.getElementById('gsc');if(sc&&GT.sum){const paint=()=>{if(!sc.isConnected||!GT.sum)return;let mp=null;try{mp=gpsMapFor(GT.sum,GT.trim)}catch(e){}gpsShareImg(sc,GT.sum,GT.trim,mp);if(mp&&mp.pend())mp.whenLoaded(paint)};paint();const tr=document.getElementById('gtr');if(tr)tr.onchange=()=>{GT.trim=tr.checked;paint()};
   B('gsh',gpsShare);B('gsd',async()=>{const b=await gpsBlob(GT.sum,GT.trim);if(b)gpsDownload(b)});B('gsv',gpsSaveRun);B('gcl',()=>{if(GT.sum.saved||confirm('Discard this run without saving it?')){GT.st='idle';GT.sum=null;GT.pts=[];GT.msg='';render()}})}}
 function runWorkoutMins(s){return s.min||30}
 function wireRun(){const A=$('#app'),R=RUN();gpsWire();const rsr=$('#rsr');if(rsr)rsr.onclick=()=>{RT.tab='gps';if(gpsActive()||(GT.st==='done'&&GT.sum&&!GT.sum.saved)||gpsSaved()){render();scrollTo(0,0);return}gpsStart(false);scrollTo(0,0)};
