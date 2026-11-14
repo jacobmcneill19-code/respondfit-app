@@ -264,7 +264,7 @@
     var fs = FB.fs, db = ST.db, uid = ST.uid, ck = 'rf_acc_' + uid;
     function one(path) { var p = fs.getDoc(fs.doc.apply(null, [db].concat(path))); return p; }
     return Promise.all([one(['admins', uid]), one(['config', 'access']), one(['clients', uid, 'billing', 'status'])]).then(function (r) {
-      var ad = r[0].exists(), pw = r[1].exists() && (r[1].data() || {}).paywall === true, act = r[2].exists() && (r[2].data() || {}).state === 'active';
+      var ad = r[0].exists(), pw = r[1].exists() && (r[1].data() || {}).paywall === true, act = !r[2].exists() || (r[2].data() || {}).state === 'active'; /* no billing record yet = active by default */
       ST.admin = ad; ST.paid = ad || !pw || act;
       try { localStorage.setItem(ck, JSON.stringify({ ad: ad, paid: ST.paid })); } catch (e) {}
     }, function (e) {
