@@ -5,7 +5,8 @@ window.RF_CONFIG = {
   projectId: "respondfit-f9a04",
   storageBucket: "respondfit-f9a04.firebasestorage.app",
   messagingSenderId: "1036227946725",
-  appId: "1:1036227946725:web:597b2772c4c66807938c0c"
+  appId: "1:1036227946725:web:597b2772c4c66807938c0c",
+  vapidKey: "BDxkDh0ZGUd1iRi0F_iJ8M5COlLIY4p2sAFRMr3rNWI_VcR3FbkEkbMXuZ7k0KUsokLSbtgJYzE02wEz51Z2AHs"
 };
 /* Where people pay. Shown on the "membership not active" screen. */
 window.RF_STRIPE = {
