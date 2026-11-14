@@ -23,6 +23,37 @@
       var done = function () { location.reload(); };
       try { FB.auth.signOut(ST.auth).then(done, done); } catch (e) { done(); }
     },
+    push: {
+      info: function () {
+        var ua = navigator.userAgent, ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        var sa = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+        var sup = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window, tok = '';
+        try { tok = localStorage.getItem('rf_push_' + (ST.uid || '')) || ''; } catch (e) {}
+        var perm = sup ? Notification.permission : 'unsupported';
+        return { supported: sup, ios: ios, standalone: sa, needsInstall: sup && ios && !sa, permission: perm, on: perm === 'granted' ? tok : '' };
+      },
+      enable: function () {
+        if (!C.vapidKey) return Promise.reject(new Error('novapid'));
+        return Notification.requestPermission().then(function (p) {
+          if (p !== 'granted') throw new Error('denied');
+          return Promise.all([import(BASE + 'firebase-messaging.js'), navigator.serviceWorker.ready]);
+        }).then(function (r) {
+          return r[0].getToken(r[0].getMessaging(ST.fapp), { vapidKey: C.vapidKey, serviceWorkerRegistration: r[1] });
+        }).then(function (tok) {
+          if (!tok) throw new Error('notoken');
+          return FB.fs.setDoc(FB.fs.doc(ST.db, 'pushTokens', tok), { uid: ST.uid, ua: navigator.userAgent.slice(0, 120), t: Date.now() }).then(function () {
+            try { localStorage.setItem('rf_push_' + ST.uid, tok); } catch (e) {}
+            return tok;
+          });
+        });
+      },
+      disable: function () {
+        var tok = '';
+        try { tok = localStorage.getItem('rf_push_' + ST.uid) || ''; localStorage.removeItem('rf_push_' + ST.uid); } catch (e) {}
+        var p = tok ? FB.fs.deleteDoc(FB.fs.doc(ST.db, 'pushTokens', tok)).catch(function () {}) : Promise.resolve();
+        return p.then(function () { return import(BASE + 'firebase-messaging.js'); }).then(function (M) { return M.deleteToken(M.getMessaging(ST.fapp)); }).catch(function () {});
+      }
+    },
     email: function () { return ST.user ? (ST.user.email || '') : ''; }, consent: function () { return ST.consent || null; }
   };
 
@@ -299,7 +330,7 @@
       try { ST.auth = FB.auth.initializeAuth(app, { persistence: [FB.auth.indexedDBLocalPersistence, FB.auth.browserLocalPersistence] }); } catch (e) { ST.auth = FB.auth.getAuth(app); } /* stay signed in after closing */ try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {}); } catch (e) {}
       try { ST.db = FB.fs.initializeFirestore(app, { ignoreUndefinedProperties: true, localCache: FB.fs.persistentLocalCache({ tabManager: FB.fs.persistentMultipleTabManager() }) }); }
       catch (e) { ST.db = FB.fs.getFirestore(app); }
-      ST.stg = FB.st.getStorage(app);
+      ST.stg = FB.st.getStorage(app); ST.fapp = app;
       FB.auth.onAuthStateChanged(ST.auth, onUser);
     }).catch(showOffline);
   }
