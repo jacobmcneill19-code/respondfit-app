@@ -8867,7 +8867,7 @@ function workoutsHub(){const P=S.profile,w=weekStart(),n=S.workouts.filter(x=>x.
  ${card('workouts','Strength training','Programs, your own workouts, the AI plan builder and your weekly schedule.',ss)}
  ${card('fit','Test prep and job training','Fitness test readiness for your service, plus training blocks built for the job.',(()=>{const st=ftSet(),r=ftReady(st);return r.k==='low'?'Log your first test results':r.tx})())}
  ${card('running','Running','Set a goal, follow a tailored program and test your fitness with the beep test.',rs)}`}
-function running(){return`<button class="ghost small" data-go="hub">← Workouts</button><h1 style="margin-top:12px">Running</h1><p class="muted" style="margin:0 0 12px">Set a goal, follow a program and check your fitness with the beep test.</p><div class="seg" role="group" aria-label="Running sections"><button data-rt="prog" aria-pressed="${RT.tab==='prog'}">Program</button><button data-rt="beep" aria-pressed="${RT.tab==='beep'}">Beep test</button><button data-rt="gps" aria-pressed="${RT.tab==='gps'}">Track a run</button></div>${RT.tab==='beep'?beepView():RT.tab==='gps'?gpsView():progView()}`}
+function running(){return`<button class="ghost small" data-go="hub">← Workouts</button><h1 style="margin-top:12px">Running</h1><p class="muted" style="margin:0 0 12px">Set a goal, follow a program and check your fitness with the beep test.</p>${RT.tab!=='gps'&&!BT.run?`<button id="rsr" style="width:100%;min-height:56px;font-size:18px;margin:0 0 14px">${gpsActive()?'● Run in progress · view':'▶ Start run'}</button>`:''}<div class="seg" role="group" aria-label="Running sections"><button data-rt="prog" aria-pressed="${RT.tab==='prog'}">Program</button><button data-rt="beep" aria-pressed="${RT.tab==='beep'}">Beep test</button><button data-rt="gps" aria-pressed="${RT.tab==='gps'}">Track a run</button></div>${RT.tab==='beep'?beepView():RT.tab==='gps'?gpsView():progView()}`}
 /* ===== GPS run tracker: route, distance, pace, elevation, shareable PNG. Routes stay on this device. ===== */
 const GK='rf-gps-active',GRK='momentum-routes-v1';
 var GT={st:'idle',pts:[],dist:0,gain:0,loss:0,el:0,seg:0,eRef:null,wid:null,lock:null,tm:null,msg:'',sum:null,trim:true,acc:0,sv:0};
@@ -8953,7 +8953,7 @@ function gpsWire(){if(RT.tab!=='gps')return;const B=(i,f)=>{const e=document.get
  const sc=document.getElementById('gsc');if(sc&&GT.sum){gpsShareImg(sc,GT.sum,GT.trim);const tr=document.getElementById('gtr');if(tr)tr.onchange=()=>{GT.trim=tr.checked;gpsShareImg(sc,GT.sum,GT.trim)};
   B('gsh',gpsShare);B('gsd',async()=>{const b=await gpsBlob(GT.sum,GT.trim);if(b)gpsDownload(b)});B('gsv',gpsSaveRun);B('gcl',()=>{if(GT.sum.saved||confirm('Discard this run without saving it?')){GT.st='idle';GT.sum=null;GT.pts=[];GT.msg='';render()}})}}
 function runWorkoutMins(s){return s.min||30}
-function wireRun(){const A=$('#app'),R=RUN();gpsWire();
+function wireRun(){const A=$('#app'),R=RUN();gpsWire();const rsr=$('#rsr');if(rsr)rsr.onclick=()=>{RT.tab='gps';if(gpsActive()||(GT.st==='done'&&GT.sum&&!GT.sum.saved)||gpsSaved()){render();scrollTo(0,0);return}gpsStart(false);scrollTo(0,0)};
  A.querySelectorAll('[data-rt]').forEach(b=>b.onclick=()=>{if(BT.run)return;RT.tab=b.dataset.rt;RT.edit=false;render()});
  const g=$('#rgg');if(g){g.onchange=()=>{$('#rgcw').hidden=g.value!=='c';$('#rgtw').hidden=g.value==='fit'};
   $('#rgf').onsubmit=e=>{e.preventDefault();const days=[...A.querySelectorAll('[data-rd]')].filter(x=>x.checked).map(x=>+x.dataset.rd),m=$('#rgm');
