@@ -13,3 +13,5 @@ window.RF_STRIPE = {
   weekly: "https://buy.stripe.com/8x2fZj6bR1CzdKm7ST1sQ05",
   monthly: "https://buy.stripe.com/6oU00lfMr2GD9u62yz1sQ04"
 };
+/* Map behind GPS runs (Mapbox public token, made for browser use). */
+window.RF_MAPBOX = { token: "pk.eyJ1IjoiamFjb2ItbWNuZWlsbDE5IiwiYSI6ImNtd2c4YjAydDBnd3EzMHIyaHA5NWx4NjUifQ.X3aws060lrY_1x_Mo4QoBg", style: "dark-v11" };
