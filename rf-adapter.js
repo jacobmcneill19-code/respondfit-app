@@ -172,7 +172,7 @@
     show('<h1>You are offline</h1><p>RespondFit could not load its sign-in service. Check your connection and try again.</p><button class="rfp" id="rfre">Try again</button>');
     ready$('rfre').onclick = function () { location.reload(); };
   }
-  var mode = 'in';
+  var mode = /signup|create/i.test(location.hash + location.search) ? 'up' : 'in';
   function showSignIn(note) {
     var up = mode === 'up', rs = mode === 'reset';
     show('<h1>' + (up ? 'Create your account' : rs ? 'Reset your password' : 'Sign in') + '</h1><p>' +
