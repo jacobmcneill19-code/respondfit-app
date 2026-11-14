@@ -296,7 +296,7 @@
     Promise.all([import(BASE + 'firebase-app.js'), import(BASE + 'firebase-auth.js'), import(BASE + 'firebase-firestore.js'), import(BASE + 'firebase-storage.js')]).then(function (m) {
       FB = { app: m[0], auth: m[1], fs: m[2], st: m[3] };
       var app = FB.app.initializeApp(C);
-      ST.auth = FB.auth.getAuth(app);
+      try { ST.auth = FB.auth.initializeAuth(app, { persistence: [FB.auth.indexedDBLocalPersistence, FB.auth.browserLocalPersistence] }); } catch (e) { ST.auth = FB.auth.getAuth(app); } /* stay signed in after closing */ try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {}); } catch (e) {}
       try { ST.db = FB.fs.initializeFirestore(app, { ignoreUndefinedProperties: true, localCache: FB.fs.persistentLocalCache({ tabManager: FB.fs.persistentMultipleTabManager() }) }); }
       catch (e) { ST.db = FB.fs.getFirestore(app); }
       ST.stg = FB.st.getStorage(app);
