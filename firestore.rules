@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+    function isAdmin() { return signedIn() && exists(/databases/$(database)/documents/admins/$(me())); }
+    function paywallOn() {
+      return exists(/databases/$(database)/documents/config/access)
+        && get(/databases/$(database)/documents/config/access).data.paywall == true;
+    }
+    function activeMember() {
+      return exists(/databases/$(database)/documents/clients/$(me())/billing/status)
+        && get(/databases/$(database)/documents/clients/$(me())/billing/status).data.state == 'active';
+    }
+    function member() { return signedIn() && (isAdmin() || !paywallOn() || activeMember()); }
+
+    // Coach list. Only you can add yourself here, in the Firebase console.
+    match /admins/{id} {
+      allow read: if signedIn() && me() == id;
+      allow write: if false;
+    }
+
+    // paywall on/off switch
+    match /config/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // first names, visible to signed-in people (used in Community)
+    match /profiles/{uid} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && me() == uid
+        && request.resource.data.keys().hasOnly(['name'])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 60;
+      allow delete: if isAdmin();
+    }
+
+    // each member's own data
+    match /clients/{uid} {
+      allow read: if isAdmin() || (signedIn() && me() == uid);
+      allow write: if isAdmin() || (signedIn() && me() == uid);
+      match /billing/{id} {
+        allow read: if isAdmin() || (signedIn() && me() == uid);
+        allow write: if isAdmin();
+      }
+      match /plans/{id} {
+        allow read: if isAdmin() || (member() && me() == uid);
+        allow write: if isAdmin() || (member() && me() == uid);
+      }
+      match /photos/{id} {
+        allow read: if isAdmin() || (member() && me() == uid);
+        allow write: if isAdmin() || (member() && me() == uid);
+      }
+    }
+
+    match /templates/{id} {
+      allow read, write: if isAdmin();
+    }
+    match /settings/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+    match /recipes/{id} {
+      allow read: if member();
+      allow write: if member();
+    }
+
+    // Community
+    match /community/{id} {
+      allow read: if member();
+      allow create: if member() && request.resource.data.uid == me();
+      allow update, delete: if isAdmin() || (member() && resource.data.uid == me());
+    }
+    match /community_comments/{id} {
+      allow read: if member();
+      allow create: if member() && request.resource.data.uid == me();
+      allow update, delete: if isAdmin() || (member() && resource.data.uid == me());
+    }
+    match /community_likes/{id} {
+      allow read: if member();
+      allow write: if isAdmin() || (member() && id.matches('.*__' + me()));
+    }
+
+    // Crew challenge
+    match /challenge_entries/{id} {
+      allow read: if member();
+      allow write: if isAdmin() || (member() && id.matches('.*__' + me()));
+    }
+    match /challenge_teams/{id} {
+      allow read: if member();
+      allow create: if member() && request.resource.data.uid == me();
+      allow update, delete: if isAdmin() || (member() && resource.data.uid == me());
+    }
+
+    // Feedback: members see only their own, you see all
+    match /feedback/{uid} {
+      allow read: if isAdmin() || (signedIn() && me() == uid);
+      allow write: if isAdmin() || (member() && me() == uid);
+    }
+  }
+}

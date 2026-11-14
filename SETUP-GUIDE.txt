@@ -1,0 +1,106 @@
+RESPONDFIT WEB APP - SETUP GUIDE
+================================
+This folder is the RespondFit app as a standalone, installable web app with its own
+sign-in. It runs on your own address (respondfitapp.com), works on iPhone and Android,
+and keeps members' data in your own Firebase project.
+
+Everything is free to start except photo and video uploads (see step 1 note).
+Allow about an hour. Do the steps in order.
+
+
+STEP 1. Create your Firebase project
+  1. Go to console.firebase.google.com and sign in with your Google account.
+  2. Click "Create a project". Name it respondfit. Turn Google Analytics off. Create.
+  NOTE: Photo and video uploads in Community use Firebase Storage. Google currently
+  asks for the pay-as-you-go (Blaze) plan to turn Storage on, which needs a card, but
+  small usage stays within the free allowance. Sign-in and all other features work on
+  the free plan. Check the current rules in the console when you get there.
+
+STEP 2. Turn on the services
+  Sign-in:   Build > Authentication > Get started > Email/Password > Enable > Save.
+             Then Authentication > Settings > Authorized domains > Add domain:
+             respondfitapp.com
+  Database:  Build > Firestore Database > Create database > choose a location near
+             you (australia-southeast1 Sydney) > Start in PRODUCTION mode.
+  Storage:   Build > Storage > Get started > production mode > same location.
+
+STEP 3. Paste in the security rules (these are what keep non-members out)
+  Firestore: Firestore Database > Rules tab. Delete what is there, paste everything from
+             firestore.rules in this folder, click Publish.
+  Storage:   Storage > Rules tab. Delete what is there, paste everything from
+             storage.rules, click Publish.
+
+STEP 4. Connect the app to your project
+  1. Project settings (cog icon) > General > "Your apps" > click the web icon (</>).
+  2. Nickname: RespondFit app. Do NOT tick Firebase Hosting. Register app.
+  3. You will see a block of settings (apiKey, authDomain, projectId and so on).
+  4. Open firebase-config.js in this folder with Notepad or TextEdit. Replace each
+     PASTE_... value with the matching value from Firebase. Save.
+  (These values are not secrets. The security rules in step 3 are what protect data.)
+
+STEP 5. Put the app online at respondfitapp.com
+  1. On github.com create a new PUBLIC repository named respondfit-app.
+  2. Add file > Upload files. Upload everything in this folder (index.html, the icon pictures,
+     sw.js and the rest). Commit.
+  3. Settings > Pages > Deploy from a branch > main / root > Save.
+     Custom domain: respondfitapp.com > Save. (The CNAME file is already included.)
+  4. In GoDaddy: Domains > respondfit.com > DNS > Add New Record:
+        Four A records, Name @, Data 185.199.108.153 / 185.199.109.153 /
+        185.199.110.153 / 185.199.111.153 (delete the old Parked record), plus
+        a CNAME with Name www and Data jacobmcneill19-code.github.io.
+  5. Wait 10 to 30 minutes, then tick "Enforce HTTPS" in the GitHub Pages settings.
+  Your landing page at respondfit.com is not affected.
+
+STEP 6. Make yourself the coach
+  1. Open https://respondfitapp.com and create your account (it will show the
+     membership screen only if the paywall is on, which it is not yet).
+  2. In Firebase: Authentication > Users. Copy your "User UID".
+  3. Firestore Database > Start collection. Collection ID: admins.
+     Document ID: paste your UID. Add one field, name ok, type boolean, value true. Save.
+  4. Start another collection: config. Document ID: access.
+     Field name paywall, type boolean, value false. Save.
+  5. Reload the app. You now land on the Community page with Clients, which is the coach view.
+
+STEP 7. Turn on paid-only access (when the free period ends)
+  1. Firestore Database > config > access > change paywall to true.
+  2. From then on, new people see a "Membership needed" screen with your Stripe links.
+  3. When a payment arrives in Stripe, find the person's email in Firebase
+     Authentication > Users, then in the app go to Clients > Open that person >
+     Subscription status > set Active. They tap "Check again" and are in.
+     To remove access, set them to Paused or Cancelled.
+  4. Your own account and any accounts in "admins" always have access.
+  Existing members stay in until you set paywall to true, so do this only when ready.
+
+HOW MEMBERS INSTALL IT
+  iPhone (Safari): open respondfitapp.com > Share button > Add to Home Screen.
+  Android (Chrome): open respondfitapp.com > menu (three dots) > Install app
+  (or Add to Home screen).
+  It then opens full screen with the RespondFit icon, like a normal app.
+
+WHAT TO CHECK THE FIRST TIME (about 10 minutes)
+  - Create a test account with a different email. Confirm it can sign in.
+  - Turn paywall on, create another test account, confirm it sees "Membership needed".
+  - Set that test account Active from the Clients tab, tap Check again, confirm it gets in.
+  - Post a photo in Community (needs Storage).
+  - Sign out from Profile, then sign back in, and confirm workouts are still there.
+  This app was tested against a simulated Firebase, not your live project, so this
+  check is how you confirm the real security rules behave. If something is blocked
+  that should not be, tell me what you saw.
+
+THINGS THAT WORK DIFFERENTLY FROM THE CLAUDE VERSION
+  - Fit Bot (the AI chat) is switched off. It needs a small server to hold an AI key.
+    It can be added later.
+  - Payments are matched by hand (step 7). Automatic activation from Stripe is a
+    later upgrade.
+  - New accounts are not email-verified. People could sign up with a wrong email.
+  - Signing in on a new phone brings back profile, workouts, logs, custom workouts,
+    check-ins and test results. Some small settings stay on the device.
+  - Photos and videos shared in Community can be opened by anyone who has the exact
+    link. Links are long random codes that cannot be guessed.
+  - Changes to the app: replace index.html on GitHub. The app updates itself on the
+    next open (members may need to close and reopen it once).
+
+LATER: APP STORES
+  This web app can be wrapped for the Apple App Store and Google Play. That needs
+  developer accounts (about US$99 per year for Apple, US$25 once for Google) and is a
+  separate job.
