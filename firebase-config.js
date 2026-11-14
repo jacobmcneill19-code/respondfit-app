@@ -9,6 +9,6 @@ window.RF_CONFIG = {
 };
 /* Where people pay. Shown on the "membership not active" screen. */
 window.RF_STRIPE = {
-  weekly: "https://buy.stripe.com/9B6aEZbwb1Cz8q25KL1sQ03",
+  weekly: "https://buy.stripe.com/8x2fZj6bR1CzdKm7ST1sQ05",
   monthly: "https://buy.stripe.com/6oU00lfMr2GD9u62yz1sQ04"
 };
