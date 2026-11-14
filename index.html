@@ -8867,9 +8867,93 @@ function workoutsHub(){const P=S.profile,w=weekStart(),n=S.workouts.filter(x=>x.
  ${card('workouts','Strength training','Programs, your own workouts, the AI plan builder and your weekly schedule.',ss)}
  ${card('fit','Test prep and job training','Fitness test readiness for your service, plus training blocks built for the job.',(()=>{const st=ftSet(),r=ftReady(st);return r.k==='low'?'Log your first test results':r.tx})())}
  ${card('running','Running','Set a goal, follow a tailored program and test your fitness with the beep test.',rs)}`}
-function running(){return`<button class="ghost small" data-go="hub">← Workouts</button><h1 style="margin-top:12px">Running</h1><p class="muted" style="margin:0 0 12px">Set a goal, follow a program and check your fitness with the beep test.</p><div class="seg" role="group" aria-label="Running sections"><button data-rt="prog" aria-pressed="${RT.tab==='prog'}">Program</button><button data-rt="beep" aria-pressed="${RT.tab==='beep'}">Beep test</button></div>${RT.tab==='beep'?beepView():progView()}`}
+function running(){return`<button class="ghost small" data-go="hub">← Workouts</button><h1 style="margin-top:12px">Running</h1><p class="muted" style="margin:0 0 12px">Set a goal, follow a program and check your fitness with the beep test.</p><div class="seg" role="group" aria-label="Running sections"><button data-rt="prog" aria-pressed="${RT.tab==='prog'}">Program</button><button data-rt="beep" aria-pressed="${RT.tab==='beep'}">Beep test</button><button data-rt="gps" aria-pressed="${RT.tab==='gps'}">Track a run</button></div>${RT.tab==='beep'?beepView():RT.tab==='gps'?gpsView():progView()}`}
+/* ===== GPS run tracker: route, distance, pace, elevation, shareable PNG. Routes stay on this device. ===== */
+const GK='rf-gps-active',GRK='momentum-routes-v1';
+var GT={st:'idle',pts:[],dist:0,gain:0,loss:0,el:0,seg:0,eRef:null,wid:null,lock:null,tm:null,msg:'',sum:null,trim:true,acc:0,sv:0};
+const fE=m=>IMP()?Math.round(m*3.28084)+' ft':Math.round(m)+' m';
+const gHav=(a,b)=>{const R=6371000,r=Math.PI/180,dl=(b[0]-a[0])*r,dn=(b[1]-a[1])*r,x=Math.sin(dl/2)**2+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.min(1,Math.sqrt(x)))};
+const gpsEl=()=>GT.el+(GT.st==='run'&&GT.seg?Date.now()-GT.seg:0);
+const gpsActive=()=>GT.st==='run'||GT.st==='pause';
+function gpsRoutes(){try{return JSON.parse(localStorage.getItem(GRK)||'{}')}catch(e){return{}}}
+function gpsPutRoute(id,o){const R=gpsRoutes();R[id]=o;const ks=Object.keys(R).sort((a,b)=>b-a);ks.slice(40).forEach(k=>delete R[k]);try{localStorage.setItem(GRK,JSON.stringify(R));return true}catch(e){return false}}
+function gpsDel(id){const R=gpsRoutes();if(R[id]){delete R[id];try{localStorage.setItem(GRK,JSON.stringify(R))}catch(e){}}}
+function gpsSnap(){if(!gpsActive())return;try{localStorage.setItem(GK,JSON.stringify({pts:GT.pts.map(p=>[+p[0].toFixed(6),+p[1].toFixed(6),p[2]==null?null:Math.round(p[2]),p[3]]),dist:GT.dist,gain:GT.gain,loss:GT.loss,el:gpsEl(),eRef:GT.eRef}))}catch(e){}}
+function gpsSaved(){try{const o=JSON.parse(localStorage.getItem(GK)||'null');return o&&o.pts&&o.pts.length>1?o:null}catch(e){return null}}
+function gpsOnPos(p){if(GT.st!=='run')return;const c=p.coords,t=p.timestamp||Date.now();GT.acc=c.accuracy;
+ if(!(c.accuracy<=35)){GT.msg='Waiting for a stronger GPS signal…';gpsUi();return}
+ const pt=[c.latitude,c.longitude,c.altitude==null||isNaN(c.altitude)?null:c.altitude,t],L=GT.pts[GT.pts.length-1];
+ if(!L){GT.pts.push(pt);GT.eRef=pt[2];GT.msg='';gpsUi();return}
+ const d=gHav(L,pt),dt=(t-L[3])/1000;if(dt<=0)return;
+ if(d<4)return;if(d/dt>12){return}
+ GT.dist+=d;GT.pts.push(pt);GT.msg='';
+ if(pt[2]!=null){if(GT.eRef==null)GT.eRef=pt[2];else{const e=pt[2]-GT.eRef;if(e>=3){GT.gain+=e;GT.eRef=pt[2]}else if(e<=-3){GT.loss+=-e;GT.eRef=pt[2]}}}
+ gpsUi()}
+function gpsWatchOn(){if(GT.wid!=null)return;GT.wid=navigator.geolocation.watchPosition(gpsOnPos,e=>{GT.msg=e&&e.code===1?'Location is blocked. Allow location for RespondFit in your phone or browser settings.':'Searching for GPS signal…';gpsUi()},{enableHighAccuracy:true,maximumAge:0,timeout:20000})}
+function gpsWatchOff(){if(GT.wid!=null){try{navigator.geolocation.clearWatch(GT.wid)}catch(e){}GT.wid=null}}
+async function gpsLockOn(){try{if(navigator.wakeLock&&!GT.lock)GT.lock=await navigator.wakeLock.request('screen')}catch(e){}}
+function gpsLockOff(){try{if(GT.lock)GT.lock.release()}catch(e){}GT.lock=null}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&GT.st==='run'){GT.lock=null;gpsLockOn()}});
+function gpsLoad(){const o=gpsSaved();if(!o)return false;GT.pts=o.pts.map(p=>[p[0],p[1],p[2],p[3]]);GT.dist=o.dist||0;GT.gain=o.gain||0;GT.loss=o.loss||0;GT.el=o.el||0;GT.eRef=o.eRef==null?null:o.eRef;return true}
+function gpsStart(resume){if(!navigator.geolocation){GT.msg='This browser cannot use GPS.';render();return}
+ if(!(resume&&gpsLoad())){GT.pts=[];GT.dist=0;GT.gain=0;GT.loss=0;GT.el=0;GT.eRef=null}
+ GT.st='run';GT.seg=Date.now();GT.msg='Searching for GPS signal…';GT.sum=null;GT.sv=0;gpsWatchOn();gpsLockOn();clearInterval(GT.tm);GT.tm=setInterval(gpsTick,1000);render()}
+function gpsPause(){if(GT.st==='run'){GT.el=gpsEl();GT.seg=0;GT.st='pause';gpsWatchOff();gpsLockOff();gpsSnap();GT.msg='Paused.'}else if(GT.st==='pause'){GT.st='run';GT.seg=Date.now();GT.msg='Searching for GPS signal…';gpsWatchOn();gpsLockOn()}render()}
+function gpsFinish(){if(!gpsActive())return;GT.el=gpsEl();GT.seg=0;gpsWatchOff();gpsLockOff();clearInterval(GT.tm);GT.tm=null;try{localStorage.removeItem(GK)}catch(e){}
+ if(GT.dist<50||GT.pts.length<2){GT.st='idle';GT.pts=[];GT.msg='That run was too short to save (under 50 m).';render();return}
+ GT.sum={id:Date.now(),date:today(),km:GT.dist/1000,sec:Math.round(GT.el/1000),gain:GT.gain,loss:GT.loss,pts:GT.pts,t0:GT.pts[0][3],saved:false};GT.st='done';GT.msg='';render();scrollTo(0,0)}
+function gpsDiscard(){gpsWatchOff();gpsLockOff();clearInterval(GT.tm);GT.tm=null;try{localStorage.removeItem(GK)}catch(e){}GT.st='idle';GT.pts=[];GT.sum=null;GT.msg='';render()}
+function gpsSaveRun(){const s=GT.sum;if(!s||s.saved)return;const R=RUN();
+ if(!gpsPutRoute(s.id,{pts:s.pts.map(p=>[+p[0].toFixed(6),+p[1].toFixed(6),p[2]==null?null:Math.round(p[2]),Math.round((p[3]-s.t0)/1000)]),gain:s.gain,loss:s.loss,t0:s.t0,sec:s.sec,km:s.km})){GT.msg='Not enough space on this device to keep the route. Share the image now, or delete an older run.';render();return}
+ (R.hist=R.hist||[]).push({id:s.id,date:s.date,km:s.km,sec:s.sec,gps:1,gain:Math.round(s.gain)});R.hist=R.hist.slice(-100);
+ S.workouts.push({id:s.id+1,date:s.date,name:'Run '+fD(s.km),mins:Math.max(1,Math.round(s.sec/60)),runlog:s.id});s.saved=true;save();GT.msg='Run saved to your history.';render()}
+function gpsOpen(id){const o=gpsRoutes()[id],h=(RUN().hist||[]).find(x=>x.id===id);if(!o||!h)return;
+ GT.sum={id,date:h.date,km:h.km,sec:h.sec,gain:o.gain||0,loss:o.loss||0,pts:o.pts.map(p=>[p[0],p[1],p[2],o.t0+p[3]*1000]),t0:o.t0,saved:true};GT.st='done';GT.msg='';render();scrollTo(0,0)}
+function gpsPace(){const n=GT.pts.length;if(n<2)return '–';const T=GT.pts[n-1][3];let i=n-1,d=0;while(i>0&&T-GT.pts[i-1][3]<=40000){d+=gHav(GT.pts[i-1],GT.pts[i]);i--}const dt=(T-GT.pts[i][3])/1000;if(d<20||dt<8)return GT.dist>50?fP(gpsEl()/60000/(GT.dist/1000)):'–';const m=dt/60/(d/1000);return m>0&&m<30?fP(m):'–'}
+function gpsTick(){if(page==='running'&&RT.tab==='gps')gpsUi(true);if(GT.st==='run'&&(++GT.sv%15===0))gpsSnap()}
+function gpsUi(){const t=document.getElementById('gt-t');if(t&&gpsActive()){t.textContent=fT(gpsEl()/1000);const set=(i,v)=>{const e=document.getElementById(i);if(e)e.textContent=v};set('gt-d',(IMP()?(GT.dist/1609.344):(GT.dist/1000)).toFixed(2));set('gt-p',gpsPace());set('gt-e',fE(GT.gain));set('gt-s',GT.msg||(GT.st==='run'?'Tracking · GPS accuracy ±'+Math.round(GT.acc||0)+' m':'Paused'));const cv=document.getElementById('gcv');if(cv)gpsLiveMap(cv)}}
+function gpsLiveMap(cv){const x=cv.getContext('2d'),W=cv.width,H=cv.height;x.clearRect(0,0,W,H);gpsGrid(x,0,0,W,H);if(GT.pts.length>1)gpsRoute(x,GT.pts,{x:20,y:20,w:W-40,h:H-40},6)}
+function gpsGrid(x,X,Y,W,H){x.save();x.strokeStyle='rgba(255,255,255,.06)';x.lineWidth=1;for(let i=1;i<8;i++){x.beginPath();x.moveTo(X+W*i/8,Y);x.lineTo(X+W*i/8,Y+H);x.stroke();x.beginPath();x.moveTo(X,Y+H*i/8);x.lineTo(X+W,Y+H*i/8);x.stroke()}x.restore()}
+function gpsRoute(x,pts,b,lw){let a=90,A=-90,o=180,O=-180;pts.forEach(p=>{a=Math.min(a,p[0]);A=Math.max(A,p[0]);o=Math.min(o,p[1]);O=Math.max(O,p[1])});
+ const k=Math.cos((a+A)/2*Math.PI/180),w=Math.max((O-o)*k,1e-6),h=Math.max(A-a,1e-6),s=Math.min(b.w/w,b.h/h),ox=b.x+(b.w-w*s)/2,oy=b.y+(b.h-h*s)/2;
+ const P=pts.map(p=>[ox+(p[1]-o)*k*s,oy+(A-p[0])*s]);x.save();x.lineJoin='round';x.lineCap='round';
+ const path=()=>{x.beginPath();P.forEach((q,i)=>i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]))};
+ x.strokeStyle='rgba(255,138,31,.28)';x.lineWidth=lw*2.8;path();x.stroke();x.strokeStyle='#FF8A1F';x.lineWidth=lw;path();x.stroke();
+ const dot=(q,c,r)=>{x.fillStyle=c;x.beginPath();x.arc(q[0],q[1],r,0,7);x.fill();x.strokeStyle='#0B1422';x.lineWidth=lw*.6;x.stroke()};dot(P[0],'#3DD68C',lw*1.5);dot(P[P.length-1],'#FFFFFF',lw*1.5);x.restore()}
+function gpsTrim(pts,m){if(pts.length<4)return pts;const c=[0];for(let i=1;i<pts.length;i++)c.push(c[i-1]+gHav(pts[i-1],pts[i]));const T=c[c.length-1];if(T<3*m)return pts;const r=pts.filter((p,i)=>c[i]>=m&&c[i]<=T-m);return r.length>=2?r:pts}
+const gpsName=t=>{const h=new Date(t).getHours();return(h<5?'Night':h<12?'Morning':h<17?'Afternoon':h<21?'Evening':'Night')+' run'};
+function gpsShareImg(cv,s,trim){const x=cv.getContext('2d'),W=1080,H=1350;cv.width=W;cv.height=H;
+ const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#0B1422');g.addColorStop(1,'#16243B');x.fillStyle=g;x.fillRect(0,0,W,H);
+ const F='"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif',T=(s2,px,wt,col,xx,yy,al)=>{x.font=wt+' '+px+'px '+F;x.fillStyle=col;x.textAlign=al||'left';x.fillText(s2,xx,yy)};
+ x.save();x.font='700 34px '+F;if('letterSpacing' in x)x.letterSpacing='6px';x.fillStyle='#FF8A1F';x.textAlign='left';x.fillText('RESPONDFIT',70,100);if('letterSpacing' in x)x.letterSpacing='0px';x.restore();
+ T(new Date(s.t0||Date.now()).toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long',year:'numeric'}),30,'400','#9BA8BD',W-70,100,'right');
+ T(gpsName(s.t0||Date.now()),68,'700','#EEF2F8',70,190);
+ x.fillStyle='rgba(255,255,255,.04)';x.beginPath();if(x.roundRect)x.roundRect(70,230,940,620,28);else x.rect(70,230,940,620);x.fill();gpsGrid(x,70,230,940,620);
+ const pts=trim?gpsTrim(s.pts,200):s.pts;if(pts.length>1)gpsRoute(x,pts,{x:130,y:290,w:820,h:500},12);
+ if(trim&&pts!==s.pts)T('Start and end hidden',24,'400','#9BA8BD',990,832,'right');
+ const dv=IMP()?s.km*0.621371:s.km,du=IMP()?'mi':'km';T(dv.toFixed(2),170,'700','#EEF2F8',70,1030);x.font='700 170px '+F;const dw=x.measureText(dv.toFixed(2)).width;T(du,56,'400','#9BA8BD',70+dw+16,1030);
+ const cols=[['TIME',fT(s.sec)],['AVG PACE',s.km>0.01?fP(s.sec/60/s.km):'–'],['ELEVATION',fE(s.gain||0)]];cols.forEach((c,i)=>{const X=70+i*320;T(c[0],26,'600','#9BA8BD',X,1110);T(c[1],58,'700','#EEF2F8',X,1175)});
+ const el=s.pts.filter(p=>p[2]!=null);if(el.length>3){let lo=1e9,hi=-1e9;el.forEach(p=>{lo=Math.min(lo,p[2]);hi=Math.max(hi,p[2])});const rng=Math.max(hi-lo,10),bx=70,by=1215,bw=940,bh=60;x.beginPath();x.moveTo(bx,by+bh);el.forEach((p,i)=>x.lineTo(bx+bw*i/(el.length-1),by+bh-(p[2]-lo)/rng*bh));x.lineTo(bx+bw,by+bh);x.closePath();x.fillStyle='rgba(255,138,31,.25)';x.fill();x.beginPath();el.forEach((p,i)=>{const X=bx+bw*i/(el.length-1),Y=by+bh-(p[2]-lo)/rng*bh;i?x.lineTo(X,Y):x.moveTo(X,Y)});x.strokeStyle='#FF8A1F';x.lineWidth=3;x.stroke()}
+ T('respondfitapp.com',26,'400','#9BA8BD',W/2,1318,'center')}
+function gpsBlob(s,trim){return new Promise(res=>{const cv=document.createElement('canvas');gpsShareImg(cv,s,trim);cv.toBlob(b=>res(b),'image/png')})}
+async function gpsShare(){const s=GT.sum;if(!s)return;const b=await gpsBlob(s,GT.trim);if(!b)return;const f=new File([b],'respondfit-run.png',{type:'image/png'});
+ try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'My run',text:fD(s.km)+' in '+fT(s.sec)});return}}catch(e){if(e&&e.name==='AbortError')return}
+ gpsDownload(b)}
+function gpsDownload(b){const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='respondfit-run-'+(GT.sum?GT.sum.date:today())+'.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
+function gpsLiveView(){const G=GT,du=IMP()?'mi':'km';return`<section class="card"><div style="text-align:center"><div class="muted" style="font-size:14px">Time</div><div id="gt-t" class="big" style="font-size:56px;font-variant-numeric:tabular-nums">${fT(gpsEl()/1000)}</div></div><div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;text-align:center;margin:8px 0 12px"><div><div class="muted" style="font-size:13px">${du}</div><b id="gt-d" style="font-size:24px">${(IMP()?G.dist/1609.344:G.dist/1000).toFixed(2)}</b></div><div><div class="muted" style="font-size:13px">Pace</div><b id="gt-p" style="font-size:24px">${gpsPace()}</b></div><div><div class="muted" style="font-size:13px">Elevation gain</div><b id="gt-e" style="font-size:24px">${fE(G.gain)}</b></div></div><canvas id="gcv" width="680" height="420" role="img" aria-label="Your route so far" style="width:100%;border-radius:12px;background:#0B1422;display:block"></canvas><p id="gt-s" class="muted" role="status" style="margin:10px 0 12px;font-size:14px">${esc(G.msg||(G.st==='run'?'Tracking':'Paused'))}</p><div class="row" style="justify-content:flex-start;gap:8px"><button id="gpa">${G.st==='run'?'Pause':'Resume'}</button><button class="ghost" id="gfi">Finish</button></div></section>`}
+function gpsSummaryView(){const s=GT.sum;return`<section class="card"><h2>${s.saved?'Your run':'Run complete'}</h2><canvas id="gsc" style="width:100%;border-radius:14px;display:block" role="img" aria-label="Route map with distance ${fD(s.km)}, time ${fT(s.sec)}"></canvas><label style="display:flex;gap:8px;align-items:center;color:var(--ink);margin:12px 0 4px"><input id="gtr" type="checkbox" ${GT.trim?'checked':''} style="width:auto;min-height:0">Hide the first and last 200 m in the shared image (protects your home address)</label><p class="muted" style="margin:0 0 12px;font-size:13px">Elevation comes from phone GPS and is only an estimate.</p><div class="row" style="justify-content:flex-start;gap:8px;flex-wrap:wrap"><button id="gsh">Share image</button><button class="ghost" id="gsd">Save image</button>${s.saved?'':'<button class="ghost" id="gsv">Save run</button>'}<button class="ghost" id="gcl">${s.saved?'Close':'Discard'}</button></div><p id="gt-s" class="muted" role="status" style="margin:10px 0 0;font-size:14px">${esc(GT.msg||'')}</p></section>`}
+function gpsView(){if(GT.st==='done'&&GT.sum)return gpsSummaryView();if(gpsActive())return gpsLiveView();
+ const sv=gpsSaved(),R=RUN(),H=(R.hist||[]).filter(h=>h.gps&&gpsRoutes()[h.id]).sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id).slice(0,8);
+ return`<section class="card"><h2>Track a run</h2><p class="muted" style="margin:0 0 10px;font-size:14px">Records your route, distance, pace and elevation with your phone’s GPS, then makes a picture you can share. Keep RespondFit open with the screen on while you run: your phone may pause GPS if you lock it or switch apps. Routes stay on this device and are never sent to your coach.</p>${sv?`<p style="margin:0 0 10px"><b>A run was interrupted.</b> <span class="muted">${fD(sv.dist/1000)} · ${fT((sv.el||0)/1000)}</span></p><div class="row" style="justify-content:flex-start;gap:8px;flex-wrap:wrap"><button id="gre">Resume</button><button class="ghost" id="gfs">Finish and save</button><button class="ghost" id="gdi">Discard</button></div>`:`<button id="gst">Start run</button>`}<p id="gt-s" class="muted" role="status" style="margin:10px 0 0;font-size:14px">${esc(GT.msg||'')}</p></section>${H.length?`<section class="card"><h2>Your tracked runs</h2>${H.map(h=>`<div class="item"><div><b>${fD(h.km)}</b> <span class="muted">· ${fT(h.sec)} · ${fP(h.sec/60/h.km)}</span><div class="muted" style="font-size:14px">${fDate(h.date)}${h.gain?' · '+fE(h.gain)+' climb':''}</div></div><button class="small" data-gv="${h.id}">View</button></div>`).join('')}</section>`:''}`}
+function gpsWire(){if(RT.tab!=='gps')return;const B=(i,f)=>{const e=document.getElementById(i);if(e)e.onclick=f};
+ B('gst',()=>gpsStart(false));B('gre',()=>gpsStart(true));B('gdi',()=>{if(confirm('Discard the interrupted run?'))gpsDiscard()});
+ B('gfs',()=>{if(gpsLoad()){GT.st='pause';GT.seg=0;gpsFinish()}});B('gpa',gpsPause);B('gfi',()=>{if(confirm('Finish this run?'))gpsFinish()});
+ document.querySelectorAll('[data-gv]').forEach(b=>b.onclick=()=>gpsOpen(+b.dataset.gv));
+ const cv=document.getElementById('gcv');if(cv)gpsLiveMap(cv);
+ const sc=document.getElementById('gsc');if(sc&&GT.sum){gpsShareImg(sc,GT.sum,GT.trim);const tr=document.getElementById('gtr');if(tr)tr.onchange=()=>{GT.trim=tr.checked;gpsShareImg(sc,GT.sum,GT.trim)};
+  B('gsh',gpsShare);B('gsd',async()=>{const b=await gpsBlob(GT.sum,GT.trim);if(b)gpsDownload(b)});B('gsv',gpsSaveRun);B('gcl',()=>{if(GT.sum.saved||confirm('Discard this run without saving it?')){GT.st='idle';GT.sum=null;GT.pts=[];GT.msg='';render()}})}}
 function runWorkoutMins(s){return s.min||30}
-function wireRun(){const A=$('#app'),R=RUN();
+function wireRun(){const A=$('#app'),R=RUN();gpsWire();
  A.querySelectorAll('[data-rt]').forEach(b=>b.onclick=()=>{if(BT.run)return;RT.tab=b.dataset.rt;RT.edit=false;render()});
  const g=$('#rgg');if(g){g.onchange=()=>{$('#rgcw').hidden=g.value!=='c';$('#rgtw').hidden=g.value==='fit'};
   $('#rgf').onsubmit=e=>{e.preventDefault();const days=[...A.querySelectorAll('[data-rd]')].filter(x=>x.checked).map(x=>+x.dataset.rd),m=$('#rgm');
@@ -8887,7 +8971,7 @@ function wireRun(){const A=$('#app'),R=RUN();
   save();render()});
  const lf=$('#rlf');if(lf)lf.onsubmit=e=>{e.preventDefault();const d=parseFloat($('#rld').value),mn=parseT($('#rlt').value),m=$('#rlm');if(!(d>0)||!(mn>0)){m.textContent='Enter a distance and a time like 28:30.';return}
   const km=IMP()?d*1.609344:d,id=Date.now();(R.hist=R.hist||[]).push({id,date:today(),km,sec:Math.round(mn*60)});R.hist=R.hist.slice(-100);S.workouts.push({id:id+1,date:today(),name:'Run '+fD(km),mins:Math.max(1,Math.round(mn)),runlog:id});save();render()};
- A.querySelectorAll('[data-rhd]').forEach(b=>b.onclick=()=>{const id=+b.dataset.rhd;R.hist=(R.hist||[]).filter(x=>x.id!==id);S.workouts=S.workouts.filter(x=>x.runlog!==id);save();render()});
+ A.querySelectorAll('[data-rhd]').forEach(b=>b.onclick=()=>{const id=+b.dataset.rhd;R.hist=(R.hist||[]).filter(x=>x.id!==id);S.workouts=S.workouts.filter(x=>x.runlog!==id);gpsDel(id);save();render()});
  /* beep test */
  A.querySelectorAll('[data-bchk]').forEach(c=>c.onchange=()=>{BT.chk=BREQ.map((_,i)=>i===+c.dataset.bchk?c.checked:!!BT.chk[i]);render()});
  const sn=$('#bsnd');if(sn)sn.onclick=()=>{bSound();render()};
@@ -9658,12 +9742,13 @@ function frSetupCard(){const P=S.profile;if(S.frHide||(P.service&&P.roster))retu
 const home0=home;home=function(){return frSetupCard()+home0()};
 const FRT={fire:'Fitness for firefighters',police:'Fitness for police',ambulance:'Fitness for paramedics',rescue:'Fitness for rescue crews',defence:'Fitness for defence personnel'};
 function frLook(){const sv=S.profile.service,h=document.documentElement;h.dataset.svc=sv||'';const t=document.querySelector('#brand small');if(t)t.textContent=FRT[sv]||'Fitness for first responders'}
-/* floating shortcut back to a workout in progress */
+/* floating shortcut back to a workout or GPS run in progress */
 let RSMT=0;
-function drawResume(){let b=document.getElementById('rsm');const on=!!(S.sess&&page!=='session');
- if(!on){if(b)b.style.display='none';clearInterval(RSMT);return}
- if(!b){b=document.createElement('button');b.id='rsm';b.type='button';b.setAttribute('aria-label','Return to your workout in progress');b.style.cssText='position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:12px;z-index:900;display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 14px;border-radius:999px;border:2px solid var(--on-accent);box-shadow:0 4px 14px rgba(0,0,0,.28);background:var(--accent);color:var(--on-accent);font-weight:700';b.onclick=()=>{page='session';render();scrollTo(0,0)};document.body.appendChild(b)}
- const up=()=>{const s=S.sess;if(!s){b.style.display='none';return}const m=Math.max(0,Math.floor((Date.now()-s.start)/1000)),h=Math.floor(m/3600),mm=String(Math.floor(m%3600/60)).padStart(h?2:1,'0'),ss=String(m%60).padStart(2,'0');b.innerHTML='<span aria-hidden="true">▶</span> Workout <span style="font-variant-numeric:tabular-nums">'+(h?h+':':'')+mm+':'+ss+'</span>'};
+function drawResume(){let b=document.getElementById('rsm');const wk=!!(S.sess&&page!=='session'),gp=!wk&&gpsActive()&&!(page==='running'&&RT.tab==='gps');
+ if(!wk&&!gp){if(b)b.style.display='none';clearInterval(RSMT);return}
+ if(!b){b=document.createElement('button');b.id='rsm';b.type='button';b.style.cssText='position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:12px;z-index:900;display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 14px;border-radius:999px;border:2px solid var(--on-accent);box-shadow:0 4px 14px rgba(0,0,0,.28);background:var(--accent);color:var(--on-accent);font-weight:700';b.onclick=()=>{if(b.dataset.k==='g'){page='running';RT.tab='gps'}else page='session';render();scrollTo(0,0)};document.body.appendChild(b)}
+ b.dataset.k=wk?'w':'g';b.setAttribute('aria-label',wk?'Return to your workout in progress':'Return to your run in progress');
+ const up=()=>{const k=b.dataset.k;if(k==='w'){const s=S.sess;if(!s){b.style.display='none';return}const m=Math.max(0,Math.floor((Date.now()-s.start)/1000)),h=Math.floor(m/3600),mm=String(Math.floor(m%3600/60)).padStart(h?2:1,'0'),ss=String(m%60).padStart(2,'0');b.innerHTML='<span aria-hidden="true">▶</span> Workout <span style="font-variant-numeric:tabular-nums">'+(h?h+':':'')+mm+':'+ss+'</span>'}else{if(!gpsActive()){b.style.display='none';return}b.innerHTML='<span aria-hidden="true">●</span> Run <span style="font-variant-numeric:tabular-nums">'+(IMP()?(GT.dist/1609.344):(GT.dist/1000)).toFixed(2)+(IMP()?' mi':' km')+' · '+fT(gpsEl()/1000)+'</span>'}};
  b.style.display='flex';up();clearInterval(RSMT);RSMT=setInterval(up,1000)}
 function render(){drawResume();clearInterval(tick);if(page!=='running')bStop();{const bh=$('#brand');if(bh)bh.hidden=page==='session'}if(page!=='session')restStop();if(page!=='coach')unsubAll();nav();$('#app').innerHTML={home,hub:workoutsHub,workouts,running,progress,nutrition,profile,session:sessionView,coach:coachView,build:builder,fit:fitView,well:wellView,feedback:fbPage}[page]();frLook();wire();if(page==='fit')wireFit();if(page==='well')wireWell();else clearInterval(WL.tm);if(page==='running')wireRun();if(page==='nutrition')wireNut();if(page==='session')wireSession();if(page==='coach')coachWire();if(page==='feedback')drawFK();if(page==='home'){const fh=$('#frhide');if(fh)fh.onclick=()=>{S.frHide=1;save();render()};drawFB();const wb=$('#wrbtn');if(wb)wb.onclick=()=>wrShow(0);wrAuto()}if(page==='build')wireBuilder()}
 function wire(){const A=$('#app');
