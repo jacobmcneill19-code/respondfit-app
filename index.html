@@ -8667,7 +8667,7 @@ const planSrc=()=>`<section class="card"><h2>More healthy recipes</h2><p class="
 const nutBack=()=>`<div style="margin-bottom:10px"><button class="ghost small" data-nut="">← Nutrition</button></div>`;
 function nutrition(){if(NS.sub==='diary')return nutBack()+'<div id="fd"></div>';if(NS.sub==='calc')return nutBack()+macros();if(NS.sub==='plan')return nutBack()+planView();
  const T=macroTargets(),tot=dayTotals(today()),pl=MP().plan,avg=pl?Math.round(pl.days.reduce((a,d)=>a+dayV(d).cal,0)/7):0;
- const card=(k,t,d,s)=>`<button class="ncard" data-nut="${k}"><span><b>${t}</b><span class="muted" style="display:block;font-size:14px;font-weight:400">${d}</span><span style="display:block;font-size:14px;font-weight:600;color:var(--accent-ink);margin-top:6px">${s}</span></span><span aria-hidden="true" style="font-size:22px;color:var(--muted)">›</span></button>`;
+ const card=(k,t,d,s)=>`<button class="ncard" data-nut="${k}">${rfIco(k)}<span style="flex:1;min-width:0"><b>${t}</b><span class="muted" style="display:block;font-size:14px;font-weight:400">${d}</span><span style="display:block;font-size:14px;font-weight:600;color:var(--accent-ink);margin-top:6px">${s}</span></span><span aria-hidden="true" style="font-size:22px;color:var(--muted)">›</span></button>`;
  return`<h1>Nutrition</h1><p class="muted" style="margin:0 0 6px">Plan what you eat, track it, and know your numbers.</p>
  ${card('diary','Food diary','Log meals by hand or barcode and track calories and macros.',T?tot.cal.toLocaleString()+' of '+T.cal.toLocaleString()+' kcal today':tot.cal.toLocaleString()+' kcal today')}
  ${card('calc','Macro calculator','Work out your daily calories, protein, carbs and fat.',T?'Target '+T.cal.toLocaleString()+' kcal a day':'Set your daily target')}
@@ -8940,7 +8940,7 @@ function beepView(){const R=RUN();
 function workoutsHub(){const P=S.profile,w=weekStart(),n=S.workouts.filter(x=>x.date>=w&&!/^Run/.test(x.name||'')).length,R=S.run||{},pl=R.plan;let rs='Set a running goal';
  if(pl){const g=genPlan(pl.goal),cw=planWeek(pl);rs=cw<1?'Starts '+fDate(pl.start):cw>g.W?'Program finished':'Week '+cw+' of '+g.W}
  const ss=S.sess?'Workout in progress: '+esc(S.sess.name):(P.tWorkouts>0?n+' of '+P.tWorkouts+' workouts this week':n+' workout'+(n===1?'':'s')+' this week');
- const card=(k,t,d,st)=>`<button class="ncard" data-go="${k}"><span><b>${t}</b><span class="muted" style="display:block;font-size:14px;font-weight:400">${d}</span><span style="display:block;font-size:14px;font-weight:600;color:var(--accent-ink);margin-top:6px">${st}</span></span><span aria-hidden="true" style="font-size:22px;color:var(--muted)">›</span></button>`;
+ const card=(k,t,d,st)=>`<button class="ncard" data-go="${k}">${rfIco(k)}<span style="flex:1;min-width:0"><b>${t}</b><span class="muted" style="display:block;font-size:14px;font-weight:400">${d}</span><span style="display:block;font-size:14px;font-weight:600;color:var(--accent-ink);margin-top:6px">${st}</span></span><span aria-hidden="true" style="font-size:22px;color:var(--muted)">›</span></button>`;
  return`<h1>Workouts</h1><p class="muted" style="margin:0 0 6px">Choose how you want to train before your next shift.</p>
  ${card('workouts','Strength training','Programs, your own workouts, the AI plan builder and your weekly schedule.',ss)}
  ${card('fit','Test prep and job training','Fitness test readiness for your service, plus training blocks built for the job.',(()=>{const st=ftSet(),r=ftReady(st);return r.k==='low'?'Log your first test results':r.tx})())}
@@ -10048,6 +10048,41 @@ document.addEventListener('click',function(e){var b=e.target&&e.target.closest&&
  else if(a==='build')rfSuBuild();
  else if(a==='done'){o=$('#rfsu');if(o)o.remove();render()}
 });
+/* Section icons: Workouts and Nutrition cards, plus headings on the main pages */
+var RFIC={
+ dumbbell:'<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/>',
+ clipboard:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 14l2 2 4-4"/>',
+ timer:'<circle cx="12" cy="13.5" r="7"/><path d="M12 13.5V9.5M9.5 3h5M12 3v3"/>',
+ fork:'<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 21V3c-2.5 1.5-3.5 4-3.5 7v3H17"/>',
+ calc:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8.5 7.5h7M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 16h.01M12 16h.01M15.5 16h.01"/>',
+ calendar:'<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/>',
+ check:'<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
+ target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+ drop:'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+ flame:'<path d="M12 3c1 4 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2.5-4.5.3 1.5 1 2.3 2 2.5C11 8.5 11 5.5 12 3z"/>',
+ trophy:'<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5v1.5A3 3 0 0 0 8 10.5M16 6h3v1.5a3 3 0 0 1-3 3M12 13v4M9 20h6M10 17h4"/>',
+ camera:'<path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+ chart:'<path d="M4 20V4M4 20h16M8 15l4-4 3 3 5-6"/>',
+ heart:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
+ ruler:'<path d="M3 15 15 3l6 6L9 21zM7 11l2 2M10 8l2 2M13 5l2 2"/>',
+ user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',
+ book:'<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11"/>',
+ data:'<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/>',
+ lock:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+ bell:'<path d="M6 17v-6a6 6 0 0 1 12 0v6l2 2H4zM10 21h4"/>',
+ card:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/>',
+ bolt:'<path d="M13 3 5 13h6l-1 8 8-10h-6z"/>',
+ list:'<path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/>',
+ cart:'<path d="M3 4h2l2 12h11l2-8H7"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/>',
+ users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5M16 5a3.5 3.5 0 0 1 0 7M18 15c2 .6 3.5 2.2 3.5 5"/>',
+ chat:'<path d="M5 5h14v10H11l-4 4v-4H5z"/>',
+ sun:'<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>'
+};
+var RFH={'Today':'sun','Streak':'flame','Achievements':'trophy','Weekly check-in':'check','Weekly check-ins':'check','Recent check-ins':'check','Daily habits':'drop','Habits, last 7 days':'drop','Weekly targets':'target','Daily habit goals':'target','Your daily target':'target','Momentum this week':'chart','Weight trend':'chart','Last 7 days':'chart','Your results':'chart','Health score':'heart','Progress photos':'camera','Log weight and measurements':'ruler','About you':'user','Account':'user','App guide':'book','Your data':'data','Privacy':'lock','Reminders':'bell','Subscription':'card','Subscription plan':'card','Subscription status':'card','Build a plan with AI':'bolt','My workouts':'dumbbell','Build a workout':'dumbbell','Log your own':'dumbbell','Recent workouts':'dumbbell','Assigned workouts':'dumbbell','Their own workouts':'dumbbell','Full program':'dumbbell','Exercise library':'list','Add an exercise':'list','This week\u2019s plan':'calendar','Your week':'calendar','Coming up':'calendar','Shopping list':'cart','My recipes':'fork','More healthy recipes':'fork','Import a recipe code':'fork','Log a run':'timer','Track a run':'timer','Your tracked runs':'timer','Beep test setup':'timer','Start the test':'timer','How the test works':'timer','Crew feed':'users','Share with the community':'users','Shared by members':'users','Fit bot':'chat'};
+function rfIcoSvg(n,z){return RFIC[n]?'<svg viewBox="0 0 24 24" width="'+z+'" height="'+z+'" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'+RFIC[n]+'</svg>':''}
+function rfIco(k){var n={workouts:'dumbbell',fit:'clipboard',running:'timer',diary:'fork',calc:'calc',plan:'calendar'}[k];return n?'<span aria-hidden="true" style="display:inline-flex;width:44px;height:44px;border-radius:12px;align-items:center;justify-content:center;flex:none;background:var(--hi);color:var(--accent-ink)">'+rfIcoSvg(n,24)+'</span>':''}
+function rfHeads(){try{document.querySelectorAll('main h2:not([data-ic])').forEach(function(h){h.setAttribute('data-ic','1');var n=RFH[h.textContent.trim()];if(!n)return;var s=document.createElement('span');s.setAttribute('aria-hidden','true');s.style.cssText='display:inline-flex;flex:none;color:var(--accent-ink)';s.innerHTML=rfIcoSvg(n,20);h.style.display='flex';h.style.alignItems='center';h.style.gap='8px';h.insertBefore(s,h.firstChild)})}catch(e){}}
+(function(){var t=0;try{new MutationObserver(function(){clearTimeout(t);t=setTimeout(rfHeads,30)}).observe(document.body,{childList:true,subtree:true})}catch(e){}rfHeads()})();
 </script>
 <script>if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});</script>
 </body>
