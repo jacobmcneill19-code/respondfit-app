@@ -188,7 +188,7 @@ function home(){const{t,score}=stats(),P=S.profile,C=2*Math.PI*100;
  <section class="card hero"><div class="ring"><svg viewBox="0 0 230 230"><circle cx="115" cy="115" r="100" fill="none" stroke="var(--line)" stroke-width="16"/><circle cx="115" cy="115" r="100" fill="none" stroke="var(--accent)" stroke-width="16" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-score/100)}"/></svg><div class="num"><span class="big">${score}</span><span class="muted">out of 100</span></div></div>
  <span class="tag">${label(score)}</span><p style="margin-top:12px" class="muted">${msg}</p><button class="ghost small" id="wrbtn" style="margin-top:10px">Weekly wrap-up</button></section>
 ${S.sess?`<section class="card"><div class="row" style="align-items:center"><div><b>Workout in progress</b><div class="muted" style="font-size:14px">${esc(S.sess.name||'Workout')}</div></div><button data-go="session">Resume</button></div></section>`:''}
- ${homeToday()}
+ ${rfDobCard()}${homeToday()}
  ${homeHabits()}
  <section class="card"><h2>Weekly targets</h2>${t.length?t.map(x=>`<div class="row"><span>${x.k}</span><span class="muted">${x.v} / ${x.t}${x.u}</span></div><div class="bar"><i style="width:${Math.min(100,x.v/x.t*100)}%"></i></div>`).join(''):'<p class="muted">No targets set yet.</p>'}
  <p class="muted" style="margin:0;font-size:14px">Your score is the average of how far you are toward each target. The week resets every Monday.</p></section>
@@ -9988,6 +9988,9 @@ function rfBd(){try{const d=S.dob;if(!d||!rfDobOk(d)||document.getElementById('r
  document.body.appendChild(el);if(mv)requestAnimationFrame(()=>requestAnimationFrame(()=>{el.style.transform='none'}));
  el.querySelector('#rfbdx').onclick=()=>{S.bdSeen=lb;save();el.remove()}}catch(e){}}
 rfAgeSync();setTimeout(rfBd,1200);
+/* Prompt to add a date of birth: new members only (no workouts or check-ins yet) */
+function rfDobCard(){try{if(S.dob||S.dobSkip||(S.workouts||[]).length||(S.logs||[]).length)return'';return'<section class="card"><h2>Add your date of birth</h2><p class="muted">It helps work out your macros and keeps your age up to date. It stays on this device only. Your coach sees your age, never your date of birth.</p><div class="grid"><button type="button" data-go="profile">Add date of birth</button><button type="button" class="ghost" data-dobskip="1">Not now</button></div></section>'}catch(e){return''}}
+document.addEventListener('click',e=>{const b=e.target&&e.target.closest&&e.target.closest('[data-dobskip]');if(b){S.dobSkip=1;save();render()}});
 </script>
 <script>if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});</script>
 </body>
