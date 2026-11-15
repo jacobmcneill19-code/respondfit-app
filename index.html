@@ -188,7 +188,7 @@ function home(){const{t,score}=stats(),P=S.profile,C=2*Math.PI*100;
  <section class="card hero"><div class="ring"><svg viewBox="0 0 230 230"><circle cx="115" cy="115" r="100" fill="none" stroke="var(--line)" stroke-width="16"/><circle cx="115" cy="115" r="100" fill="none" stroke="var(--accent)" stroke-width="16" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-score/100)}"/></svg><div class="num"><span class="big">${score}</span><span class="muted">out of 100</span></div></div>
  <span class="tag">${label(score)}</span><p style="margin-top:12px" class="muted">${msg}</p><button class="ghost small" id="wrbtn" style="margin-top:10px">Weekly wrap-up</button></section>
 ${S.sess?`<section class="card"><div class="row" style="align-items:center"><div><b>Workout in progress</b><div class="muted" style="font-size:14px">${esc(S.sess.name||'Workout')}</div></div><button data-go="session">Resume</button></div></section>`:''}
- ${rfDobCard()}${homeToday()}
+ ${rfDobCard()}${rfSuCard()}${homeToday()}
  ${homeHabits()}
  <section class="card"><h2>Weekly targets</h2>${t.length?t.map(x=>`<div class="row"><span>${x.k}</span><span class="muted">${x.v} / ${x.t}${x.u}</span></div><div class="bar"><i style="width:${Math.min(100,x.v/x.t*100)}%"></i></div>`).join(''):'<p class="muted">No targets set yet.</p>'}
  <p class="muted" style="margin:0;font-size:14px">Your score is the average of how far you are toward each target. The week resets every Monday.</p></section>
@@ -9991,6 +9991,51 @@ rfAgeSync();setTimeout(rfBd,1200);
 /* Prompt to add a date of birth: new members only (no workouts or check-ins yet) */
 function rfDobCard(){try{if(S.dob||S.dobSkip||(S.workouts||[]).length||(S.logs||[]).length)return'';return'<section class="card"><h2>Add your date of birth</h2><p class="muted">It helps work out your macros and keeps your age up to date. It stays on this device only. Your coach sees your age, never your date of birth.</p><div class="grid"><button type="button" data-go="profile">Add date of birth</button><button type="button" class="ghost" data-dobskip="1">Not now</button></div></section>'}catch(e){return''}}
 document.addEventListener('click',e=>{const b=e.target&&e.target.closest&&e.target.closest('[data-dobskip]');if(b){S.dobSkip=1;save();render()}});
+/* New-member setup: goal, days per week and a starter week built from the built-in sessions. New members only. */
+var RFSU_DAYS={2:[0,3],3:[0,2,4],4:[0,1,3,4],5:[0,1,2,4,5],6:[0,1,2,3,4,5]};
+function rfSuNew(){try{return !(S.setupDone||S.setupSkip||(S.workouts||[]).length||(S.logs||[]).length||Object.keys(S.sched||{}).length)}catch(e){return false}}
+function rfSuCard(){try{if(!rfSuNew())return'';return'<section class="card"><h2>Set up your plan</h2><p class="muted">Tell us your goal and how many days you can train, and we will build a starter week for you. You can change it any time.</p><div class="grid"><button type="button" data-su="open">Build my plan</button><button type="button" class="ghost" data-su="skip">Not now</button></div></section>'}catch(e){return''}}
+function rfSuPlan(o){
+ var pools={lose:[0,3,2,1,3,4],gain:[1,2,0,1,2,4],maintain:[0,3,1,2,4,0]};
+ var pool=(pools[o.goal]||pools.maintain).slice();
+ if(o.lim==='lower')pool=[1,3,4,1,3,4];
+ else if(o.lim==='upper')pool=[2,3,4,2,3,4];
+ else if(o.lim==='other')pool=[3,4,3,4,3,4];
+ else if(o.exp==='new')pool=pool.map(function(i){return i===3?4:i});
+ var n=Math.max(2,Math.min(6,+o.days||3));
+ if(o.exp==='new')n=Math.min(n,4);
+ var days=RFSU_DAYS[n],sched={},mins=0;
+ for(var d=0;d<7;d++)sched[d]='r';
+ days.forEach(function(d,k){var i=pool[k%pool.length];sched[d]='l:'+i;mins+=LIB[i].m});
+ return{sched:sched,n:n,mins:mins}
+}
+function rfSuOpen(){
+ if($('#rfsu'))return;
+ var P=S.profile,gd=+P.tWorkouts>=2&&+P.tWorkouts<=6?+P.tWorkouts:3,d=document.createElement('div');
+ var sel=function(id,l,opts,v){return'<div><label for="'+id+'">'+l+'</label><select id="'+id+'">'+opts.map(function(x){return'<option value="'+x[0]+'"'+(x[0]===v?' selected':'')+'>'+x[1]+'</option>'}).join('')+'</select></div>'};
+ d.id='rfsu';d.style.cssText='position:fixed;top:0;right:0;bottom:0;left:0;z-index:880;background:rgba(14,26,43,.6);display:flex;align-items:flex-end;justify-content:center';
+ d.innerHTML='<div class="card stack" role="dialog" aria-modal="true" aria-label="Set up your plan" style="width:100%;max-width:520px;max-height:92vh;overflow:auto;margin:0;border-radius:18px 18px 0 0"><h2>Set up your plan</h2><p class="muted">Four quick questions. We will build a starter week from this. You can change anything later.</p><div class="grid">'
+ +sel('susg','Your goal',[['lose','Lose fat'],['maintain','Maintain'],['gain','Build muscle']],P.goal||'maintain')
+ +sel('susd','Days per week you can train',[['2','2 days'],['3','3 days'],['4','4 days'],['5','5 days'],['6','6 days']],String(gd))
+ +sel('suse','Training experience',[['new','New to training'],['some','Some experience'],['exp','Experienced']],'some')
+ +sel('susl','Any injury or limitation',[['none','None'],['lower','Lower body (legs, hips, knees)'],['upper','Upper body (shoulders, arms, back)'],['other','Something else or not sure']],'none')
+ +'</div><p class="muted" style="font-size:13px;margin:0">This is a general starter plan, not medical advice. If you have an injury or health condition, check with your doctor and talk to your coach. Your experience and limitation answers stay on this device.</p><div class="grid"><button type="button" data-su="build">Build my plan</button><button type="button" class="ghost" data-su="close">Cancel</button></div></div>';
+ document.body.appendChild(d);
+}
+function rfSuBuild(){
+ var o={goal:$('#susg').value,days:+$('#susd').value,exp:$('#suse').value,lim:$('#susl').value},r=rfSuPlan(o),P=S.profile;
+ S.sched=r.sched;P.goal=o.goal;P.tWorkouts=r.n;P.tMinutes=r.mins;S.setup={goal:o.goal,days:r.n,exp:o.exp,lim:o.lim,t:Date.now()};S.setupDone=1;save();
+ var nm=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],rows=nm.map(function(x,i){var v=r.sched[i];return'<div class="row" style="justify-content:space-between"><b>'+x+'</b><span class="muted">'+(v==='r'?'Rest day':esc(schedName(v)))+'</span></div>'}).join('');
+ var box=document.querySelector('#rfsu .card');
+ if(box)box.innerHTML='<h2>Your starter week</h2>'+rows+'<p class="muted" style="font-size:13px;margin:0">'+(o.lim==='other'?'Because of your limitation we kept this to gentle sessions. Please check in with your coach before adding more. ':'')+'Your weekly targets are now '+r.n+' workouts and '+r.mins+' active minutes. Change the plan any time from Workouts.</p><button type="button" data-su="done">Done</button>';
+}
+document.addEventListener('click',function(e){var b=e.target&&e.target.closest&&e.target.closest('[data-su]');if(!b)return;var a=b.getAttribute('data-su'),o;
+ if(a==='open')rfSuOpen();
+ else if(a==='skip'){S.setupSkip=1;save();render()}
+ else if(a==='close'){o=$('#rfsu');if(o)o.remove()}
+ else if(a==='build')rfSuBuild();
+ else if(a==='done'){o=$('#rfsu');if(o)o.remove();render()}
+});
 </script>
 <script>if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});</script>
 </body>
