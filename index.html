@@ -9996,7 +9996,7 @@ var RFSU_DAYS={2:[0,3],3:[0,2,4],4:[0,1,3,4],5:[0,1,2,4,5],6:[0,1,2,3,4,5]};
 function rfSuNew(){try{return !(S.setupDone||S.setupSkip||(S.workouts||[]).length||(S.logs||[]).length||Object.keys(S.sched||{}).length)}catch(e){return false}}
 function rfSuQuiet(){try{return rfSuNew()||!!S.setupDone||!!S.setupSkip}catch(e){return false}}
 function rfSuCard(){try{if(!rfSuNew())return'';var P=S.profile;
- var ck=function(ok,t){return'<div class="row" style="align-items:center;gap:10px"><span aria-hidden="true" style="display:inline-flex;width:22px;height:22px;border-radius:50%;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:none;'+(ok?'background:var(--accent);color:var(--on-accent)':'border:2px solid var(--line)')+'">'+(ok?'&#10003;':'')+'</span><span>'+t+'</span></div>'};
+ var ck=function(ok,t){return'<div class="row" style="align-items:center;justify-content:flex-start;gap:10px"><span aria-hidden="true" style="display:inline-flex;width:22px;height:22px;border-radius:50%;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:none;'+(ok?'background:var(--accent);color:var(--on-accent)':'border:2px solid var(--line)')+'">'+(ok?'&#10003;':'')+'</span><span>'+t+'</span></div>'};
  return'<section class="card stack"><h2>Get started</h2><p class="muted">A couple of minutes to set RespondFit up for you. At the end we build your first week of training.</p>'
  +ck(!!(P.service&&P.roster),'Your service and roster')+ck(!!S.dob,'Date of birth')+ck(false,'Your goal and training week')
  +'<div class="grid"><button type="button" data-su="open">Start setup</button><button type="button" class="ghost" data-su="skip">Not now</button></div></section>'}catch(e){return''}}
