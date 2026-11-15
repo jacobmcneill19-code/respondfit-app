@@ -183,7 +183,7 @@ function habCard(d){const P=d.profile||{},gl=habitGoals(P),H=d.habits||{};if(!gl
 function home(){const{t,score}=stats(),P=S.profile,C=2*Math.PI*100;
  const low=t.filter(x=>x.v<x.t).sort((a,b)=>a.v/a.t-b.v/b.t)[0];
  const msg=!t.length?'Set weekly targets in your profile to start building momentum.':low?`Next up: ${low.k.toLowerCase()}, ${low.t-low.v}${low.u} to go this week.`:'Every target hit this week. Keep it rolling.';
- return`<div class="row" style="align-items:center"><p class="muted" style="display:flex;align-items:center;gap:8px;margin:0">${svcIcon(P.service)}<span>${P.name?'Hi '+esc(P.name)+', your':'Your'} momentum this week</span></p><button class="ghost" data-go="profile" aria-label="Profile and personal details" title="Profile" style="padding:0;width:44px;border-radius:50%"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20.5c.6-4 3.7-6.2 7.5-6.2s6.9 2.2 7.5 6.2"/></svg></button></div>
+ return`<div class="row" style="align-items:center"><p class="muted" style="display:flex;align-items:center;gap:8px;margin:0">${svcIcon(P.service)}<span>${P.name?'Hi '+esc(P.name)+', your':'Your'} momentum this week</span></p><span style="display:flex;gap:8px;flex:none"><button class="ghost" data-rfw="welcome" aria-label="Welcome and how-to guide" title="Guide" style="padding:0;width:44px;border-radius:50%"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.1-2.4 3.6"/><circle cx="12" cy="16.9" r=".4" fill="currentColor"/></svg></button><button class="ghost" data-go="profile" aria-label="Profile and personal details" title="Profile" style="padding:0;width:44px;border-radius:50%"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20.5c.6-4 3.7-6.2 7.5-6.2s6.9 2.2 7.5 6.2"/></svg></button></span></div>
  <section class="card" id="fbcard"></section>
  <section class="card hero"><div class="ring"><svg viewBox="0 0 230 230"><circle cx="115" cy="115" r="100" fill="none" stroke="var(--line)" stroke-width="16"/><circle cx="115" cy="115" r="100" fill="none" stroke="var(--accent)" stroke-width="16" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-score/100)}"/></svg><div class="num"><span class="big">${score}</span><span class="muted">out of 100</span></div></div>
  <span class="tag">${label(score)}</span><p style="margin-top:12px" class="muted">${msg}</p><button class="ghost small" id="wrbtn" style="margin-top:10px">Weekly wrap-up</button></section>
@@ -283,6 +283,7 @@ function profile(){const P=S.profile,n=(id,l,v,x='')=>`<div><label for="${id}">$
  <button>Save profile</button> <span id="saved" class="muted" role="status"></span></form>
  <section class="card" id="subcard">${subInner()}</section>
  <section class="card" id="hlt"></section>
+ <section class="card"><h2>App guide</h2><p class="muted">How everything works, and how to add RespondFit to your Home Screen.</p><div class="grid"><button class="ghost" type="button" data-rfw="welcome">Show welcome screen</button><button class="ghost" type="button" data-rfw="guide">How to use RespondFit</button><button class="ghost" type="button" data-rfw="install">Add to Home Screen</button></div></section>
  <section class="card"><h2>Your data</h2><p class="muted">Download a backup of your workouts, check-ins and settings, or restore one on this device. Progress photos aren’t included.</p><div class="grid"><button class="ghost" id="exp" type="button">Download backup</button><button class="ghost" id="impb" type="button">Restore backup</button></div><input type="file" id="imp" accept=".json,application/json" hidden><div id="bkout" role="status" class="muted" style="margin-top:10px"></div></section>
  ${window.RFA&&RFA.push&&(PUSH_ON||ISCOACH)?'<section class="card" id="pshc"></section>':''}
  <section class="card"><h2>Account</h2><p class="muted" id="rfacct"></p><button class="ghost" id="rfso">Sign out</button></section>
@@ -9592,7 +9593,7 @@ function wrShow(k){wrClose(true);if(!WR.back)WR.back=document.activeElement;WR.o
 const wrKey=e=>{if(e.key==='Escape')wrClose()};
 function wrClose(keep){const d=document.getElementById('wro');if(d)d.remove();document.removeEventListener('keydown',wrKey);if(!keep&&WR.back&&WR.back.isConnected)try{WR.back.focus()}catch(e){}if(!keep)WR.back=null}
 function wrAuto(){if(WR.shown)return;WR.shown=true;const prev=wrK(1);if(S.wrap&&S.wrap.seen===prev)return;const w=wrWeek(prev);
- setTimeout(()=>{if(document.getElementById('cgo')||document.getElementById('wro'))return;S.wrap={seen:prev};save();if(w.n>0||w.hab>0||w.chk>0)wrShow(1)},900)}
+ setTimeout(()=>{if(document.getElementById('cgo')||document.getElementById('wro')||document.getElementById('rfw'))return;S.wrap={seen:prev};save();if(w.n>0||w.hab>0||w.chk>0)wrShow(1)},900)}
 /* ===== Primary muscle (one word) for every exercise ===== */
 const MU_RULES=[
 ['Full-body',/\b(burpee|clean|snatch|turkish|jumping jack|man maker|devil press|thruster|get[- ]up|complex|battle rope|ball slam|slam)\b/],
@@ -9865,6 +9866,110 @@ function wire(){const A=$('#app');
  drawSub();drawHI();const exb=$('#exp');if(exb){exb.onclick=exportData;$('#impb').onclick=()=>$('#imp').click();$('#imp').onchange=importData}
  drawPush();const so=$('#rfso');if(so)so.onclick=()=>window.RFA&&RFA.signOut();const ac=$('#rfacct');if(ac&&window.RFA)ac.textContent='Signed in as '+RFA.email();const rs=$('#reset');if(rs)rs.onclick=()=>{if(confirm('Delete all your data? This can’t be undone.')){S=def();save();page='home';render()}}}
 page='home';try{if(history.scrollRestoration)history.scrollRestoration='manual'}catch(e){}render();scrollTo(0,0);
+/* ===== Welcome screen and how-to guide pop up ===== */
+const RFW_KEY='respondfit-welcome-v2',RFW={tab:'welcome',back:null,os:'',bip:null,mem:false};
+const rfwOS=()=>{const u=navigator.userAgent||'';if(/iPhone|iPad|iPod/i.test(u)||(/Macintosh/.test(u)&&navigator.maxTouchPoints>1))return'ios';if(/Android/i.test(u))return'android';return'desktop'};
+const rfwApp=()=>{try{return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}catch(e){return false}};
+const rfwSeen=()=>{try{return localStorage.getItem(RFW_KEY)==='1'||RFW.mem}catch(e){return RFW.mem}};
+const rfwMark=()=>{RFW.mem=true;try{localStorage.setItem(RFW_KEY,'1')}catch(e){}};
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();RFW.bip=e;const b=document.getElementById('rfwinst');if(b)b.hidden=false});
+window.addEventListener('appinstalled',()=>{RFW.bip=null;const b=document.getElementById('rfwinst');if(b)b.hidden=true});
+document.addEventListener('click',e=>{const b=e.target&&e.target.closest&&e.target.closest('[data-rfw]');if(b&&!b.closest('#rfw')){e.preventDefault();rfwShow(b.dataset.rfw||'welcome')}});
+const RFWI={
+ share:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Share icon" role="img" style="vertical-align:-3px"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M7 10H5v11h14V10h-2"/></svg>',
+ add:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="vertical-align:-3px"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/></svg>',
+ dots:'<b style="letter-spacing:1px;white-space:nowrap">•••</b>',kebab:'<b style="font-size:18px">⋮</b>',
+ help:'<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.1-2.4 3.6"/><circle cx="12" cy="16.9" r=".4" fill="currentColor"/></svg>'};
+const rfwOl=a=>`<ol class="rfw-ol">${a.map(x=>`<li>${x}</li>`).join('')}</ol>`;
+const rfwUl=a=>`<ul class="rfw-ul">${a.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+const rfwSec=(t,sub,body,open)=>`<details class="rfw-d"${open?' open':''}><summary><span><b>${t}</b><span class="muted rfw-sub">${sub}</span></span><span class="rfw-x" aria-hidden="true">+</span></summary><div class="rfw-dd">${body}</div></details>`;
+function rfwCss(){if(document.getElementById('rfwcss'))return;const s=document.createElement('style');s.id='rfwcss';s.textContent=`
+#rfw{position:fixed;inset:0;z-index:1000;background:rgba(5,10,20,.62);display:flex;align-items:flex-start;justify-content:center;padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px));padding-top:calc(12px + env(safe-area-inset-top,0px));overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+#rfw .rfw-card{max-width:520px;width:100%;margin:auto;padding:0;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+#rfw .rfw-hero{position:relative;background:#0F1B2D;color:#fff;border-radius:15px 15px 0 0;padding:18px 20px 16px;text-align:center}
+#rfw .rfw-hero h2{font-size:23px;font-weight:800;letter-spacing:-.02em;margin:6px 0 2px;color:#fff}
+#rfw .rfw-hero p{margin:0;color:#C9D2E0;font-size:15px}
+#rfw .rfw-close{position:absolute;top:10px;right:10px;width:40px;min-height:40px;padding:0;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;font-size:22px;line-height:1}
+#rfw .rfw-tabs{margin:0;padding:12px 16px 0;gap:6px;position:sticky;top:-12px;background:var(--surface);z-index:1;padding-bottom:10px;border-bottom:1px solid var(--line)}
+#rfw .rfw-tabs button{font-size:14px;padding:8px 4px;min-height:40px}
+#rfw .rfw-b{padding:16px 18px 6px}
+#rfw .rfw-b h3{font-size:17px;margin:4px 0 8px}
+#rfw .rfw-feat{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 16px}
+#rfw .rfw-feat div{border:1px solid var(--line);border-radius:12px;padding:10px;font-size:13px;color:var(--muted);line-height:1.35}
+#rfw .rfw-feat b{display:block;color:var(--ink);font-size:15px;margin-bottom:2px}
+#rfw .rfw-ol{margin:6px 0 4px;padding:0;list-style:none;counter-reset:rfw}
+#rfw .rfw-ol li{counter-increment:rfw;position:relative;padding:2px 0 12px 38px;min-height:30px;line-height:1.45}
+#rfw .rfw-ol li::before{content:counter(rfw);position:absolute;left:0;top:0;width:27px;height:27px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-weight:800;font-size:14px;display:grid;place-items:center}
+#rfw .rfw-ul{margin:6px 0 8px;padding-left:20px}#rfw .rfw-ul li{margin:0 0 7px;line-height:1.45}
+#rfw .rfw-d{border-top:1px solid var(--line);padding:0}
+#rfw .rfw-d:first-of-type{border-top:0}
+#rfw .rfw-d summary{padding:13px 0;align-items:center;gap:10px}
+#rfw .rfw-sub{display:block;font-size:13px;font-weight:400;margin-top:1px}
+#rfw .rfw-x{flex:none;width:28px;height:28px;border-radius:50%;background:var(--hi);color:var(--hi-ink);display:grid;place-items:center;font-size:20px;font-weight:600;transition:transform .2s}
+#rfw .rfw-d[open] .rfw-x{transform:rotate(45deg)}
+#rfw .rfw-dd{padding:0 0 12px;font-size:15px}
+#rfw .rfw-note{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;margin:8px 0 12px;line-height:1.45}
+#rfw .rfw-note.hi{background:var(--hi);color:var(--hi-ink);border-color:transparent}
+#rfw .rfw-ft{position:sticky;bottom:-12px;background:var(--surface);border-top:1px solid var(--line);border-radius:0 0 15px 15px;padding:12px 18px 14px}
+#rfw .rfw-ft button{width:100%}
+#rfw .rfw-ft p{margin:8px 0 0;font-size:13px;text-align:center}
+#rfw .rfw-act{display:grid;gap:8px;margin:14px 0 6px}
+@media (prefers-reduced-motion:no-preference){#rfw .rfw-card{animation:rfwin .28s ease-out}@keyframes rfwin{from{opacity:0;transform:translateY(14px)}}}
+`;document.head.appendChild(s)}
+function rfwWelcome(){const inApp=rfwApp();
+ return`<p style="margin:0 0 14px">RespondFit helps you train for the job, pass your fitness test and look after yourself between shifts. Here’s what’s inside.</p>
+ <div class="rfw-feat"><div><b>Momentum score</b>Your week at a glance, out of 100</div><div><b>Workouts</b>Programs, your own builds and AI plans</div><div><b>Test prep</b>Practise your agency’s fitness test</div><div><b>Progress</b>Weigh-ins, measurements and photos</div><div><b>Nutrition</b>Macro targets and a food diary</div><div><b>Wellbeing</b>Recovery, shift tips and support</div></div>
+ <h3>Get started in 3 steps</h3>
+ ${rfwOl(['<b>Set up your profile.</b> Add your service, roster and weekly targets so RespondFit matches your job and shifts.',inApp?'<b>You’ve added RespondFit to your Home Screen.</b> Nice work. Open it from there each time.':'<b>Add RespondFit to your Home Screen</b> so it opens full screen, like an app.','<b>Log your first workout.</b> Start a program under Workouts and your momentum score starts moving.'])}
+ <div class="rfw-act"><button type="button" id="rfwprof">Set up my profile</button>${inApp?'':'<button type="button" class="ghost" data-rft="install">Add to Home Screen</button>'}<button type="button" class="ghost" data-rft="guide">Read the full guide</button></div>`}
+function rfwGuide(){return`<p class="muted" style="margin:0 0 6px;font-size:14px">Tap a topic to open it.</p>
+ ${rfwSec('Set up your profile','Do this first, it takes 2 minutes',rfwOl(['On <b>Home</b>, tap the person icon at the top right.','Add your name, age, height and weight, and pick metric or imperial units.','Choose <b>your service</b> (Fire, Police, Ambulance, Rescue or Defence) and <b>your roster</b>. This unlocks the right fitness tests, job training and shift-aware recovery tips.','Set your <b>weekly targets</b> for workouts, active minutes, check-ins and habit days. Set any to 0 to leave it out.','Set <b>daily habit goals</b> for water, steps, sleep and protein, then tap <b>Save profile</b>.']),true)}
+ ${rfwSec('Home and your momentum score','How your week is tracked',rfwUl(['The ring is your <b>momentum score</b> out of 100: the average of how far you are toward each weekly target. It resets every Monday.','<b>Today</b> shows the workout you planned for today, with a Start button. If you leave a workout part way, tap <b>Resume</b> here.','<b>Daily habits</b>: tap + or − for water and type in your steps, sleep and protein. A habit day is a day you meet every goal you’ve switched on.','<b>Streak</b> counts weeks in a row you hit your workout target. <b>Achievements</b> unlock as you go.','Tap <b>Weekly wrap-up</b> for your numbers compared with the week before. It also pops up at the start of each new week.']))}
+ ${rfwSec('Workouts','Programs, your own builds and logging',rfwUl(['Tap <b>Workouts</b> in the bottom bar, then choose Strength training, Running or Test prep and job training.','<b>Start a program</b>: open one, check the exercises (each has a moving demo) and tap <b>Start workout</b>.','<b>During a workout</b>: enter the weight and reps, then tick each set as you finish it. A rest timer appears at the bottom. Tap Sound on for a beep, or Skip to move on.','<b>Build your own</b> from the full exercise library, then start or edit it any time under My workouts.','<b>Build a plan with AI</b> (when it’s available): pick your goal, days, session length, experience, equipment and focus. Save the plan to My workouts and, if you like, set your weekly plan in one go.','<b>This week’s plan</b>: choose a workout or rest day for each day. Today’s pick shows on Home.','<b>Log your own</b> for anything else, like a swim or a hike: add a name, minutes and date.','<b>Running</b> has your runs and the 20 m beep test.']))}
+ ${rfwSec('Test prep and job training','Get ready for your fitness test',rfwUl(['Under Workouts, open <b>Test prep and job training</b>.','<b>Fitness tests</b>: pick your test set and add your test date to see a countdown. Open <b>How to do this test</b> for the standard, log each practice result and change the target to match your agency.','Your <b>readiness</b> shows Building, Nearly there or Test ready once every test has a result.','<b>Job training</b> has blocks built for the physical demands of your role. Start one now or save it to My workouts.'])+'<div class="rfw-note">Targets are typical benchmarks, not an official standard. Always check your agency’s current requirements.</div>')}
+ ${rfwSec('Progress','Check-ins, measurements and photos',rfwUl(['<b>Weekly check-in</b>: rate your energy, sleep and stress, say how much of your plan you did, and add a note. If you’re connected to a coach, they see it next to your numbers. Sending again that week updates it.','<b>Log weight and measurements</b>: weight, body fat, waist, chest, hips, arm and thigh. Two weigh-ins draw your weight trend.','<b>Progress photos</b>: add up to 40 and compare your first and latest side by side.','<b>History</b> lists every entry. Tap Delete to remove a mistake.']))}
+ ${rfwSec('Nutrition','Macro targets and food diary',rfwUl(['The <b>macro calculator</b> gives you daily calories, protein, carbs and fat from your age, height, weight, activity and goal.','Treat the numbers as a starting point and adjust after a few weeks.','Use the <b>food diary</b> to log what you eat and see your daily totals.']))}
+ ${rfwSec('Wellbeing','Recovery, shift tips and support',rfwUl(['<b>Today’s check-in</b>: rate mood, stress and energy from 1 to 5, pick today’s shift and add a private note, then tap Save check-in.','Check in on 2 or more days to see your <b>recovery score</b> and 14-day trends.','<b>Recovery tips</b> match your shift or roster, like sleeping well after nights.','<b>Reset after a tough job</b> walks you through two minutes of box breathing.','<b>Need to talk to someone?</b> has support lines you can call with one tap.'])+'<div class="rfw-note">Wellbeing check-ins stay on your device and are never shared with your coach.</div>')}
+ ${rfwSec('Community and feedback','Your coach and your ideas',rfwUl(['If you’re connected to a coach, the last tab is <b>Community</b>. A number on the tab shows unread messages.','Otherwise the last tab is <b>Feedback</b>: send an idea, problem or compliment, with an optional rating and screenshot.']))}
+ ${rfwSec('Your data and privacy','Backups, health apps and settings',rfwUl(['Everything saves automatically in this browser on this device. There’s nothing to sign up for.','In your profile, tap <b>Download backup</b> now and then. Use <b>Restore backup</b> to move to a new phone. Progress photos aren’t included in backups.','<b>Health apps</b> in your profile imports the last 90 days of steps, sleep, weight and workouts from Apple Health, Samsung Health or Garmin Connect.','<b>Subscription</b> in your profile shows your plan and payment options from your coach.','<b>Delete all my data</b> clears everything from this device. It can’t be undone.'])+'<div class="rfw-note">Clearing your browser’s history or website data also deletes RespondFit’s data, so keep a recent backup.</div>')}
+ <div class="rfw-act"><button type="button" class="ghost" data-rft="install">How to add RespondFit to your Home Screen</button></div>`}
+function rfwInstall(){const os=RFW.os,inApp=rfwApp(),seg=`<div class="seg" role="group" aria-label="Choose your device" style="margin:0 0 14px"><button type="button" data-rfos="ios" aria-pressed="${os==='ios'}">iPhone or iPad</button><button type="button" data-rfos="android" aria-pressed="${os==='android'}">Android</button><button type="button" data-rfos="desktop" aria-pressed="${os==='desktop'}">Computer</button></div>`;
+ const top=inApp?'<div class="rfw-note hi"><b>You’re already using the Home Screen app.</b> These steps are here if you want to set it up on another device.</div>':`<p style="margin:0 0 12px">Add RespondFit to your Home Screen and it opens full screen with its own icon, just like an app. No app store needed.</p>`;
+ const inst=`<button type="button" id="rfwinst" ${RFW.bip?'':'hidden'} style="width:100%;margin:0 0 14px">Install RespondFit now</button>`;
+ let b='';
+ if(os==='ios')b=`<h3>iPhone or iPad (Safari)</h3>${rfwOl(['Open RespondFit in <b>Safari</b>.',`Tap the <b>Share</b> button ${RFWI.share}. On iOS 26 or later, tap ${RFWI.dots} next to the address bar first, then tap <b>Share</b>. On older versions, Share is in the bar at the bottom (or top right on iPad).`,`Scroll down and tap <b>Add to Home Screen</b> ${RFWI.add}. If you can’t see it, tap <b>Edit Actions</b> at the bottom of the list and add it.`,'Keep the name as <b>RespondFit</b>. On iOS 26 or later, leave <b>Open as Web App</b> switched on.','Tap <b>Add</b>. RespondFit is now on your Home Screen. Open it from the icon from now on.'])}
+ <div class="rfw-note"><b>Important on iPhone:</b> the Home Screen app keeps its own data, separate from Safari. If you’ve already logged workouts in Safari, open your profile there and tap <b>Download backup</b>, then open the Home Screen app and tap <b>Restore backup</b>.</div>
+ <p class="muted" style="font-size:14px;margin:0 0 6px">Using Chrome or Edge on iPhone? Tap the Share button ${RFWI.share} in the address bar, then Add to Home Screen.</p>`;
+ else if(os==='android')b=`<h3>Android (Chrome)</h3>${rfwOl(['Open RespondFit in <b>Chrome</b>.',`Tap the menu ${RFWI.kebab} at the top right.`,'Tap <b>Add to Home screen</b> (on some phones it says <b>Install app</b>).','If asked, choose <b>Install</b>, then tap <b>Add</b> or <b>Install</b> to confirm.','Find the RespondFit icon on your home screen or in your app list, and open it from there from now on.'])}
+ <h3 style="margin-top:6px">Samsung Internet</h3>${rfwOl(['Tap the menu <b>≡</b> at the bottom right.','Tap <b>Add page to</b>, then <b>Home screen</b>.','Tap <b>Add</b>.'])}
+ <div class="rfw-note">Your data usually carries over from the browser. To be safe, tap <b>Download backup</b> in your profile first. You can restore it in the app if anything is missing.</div>`;
+ else b=`<h3>On a computer</h3>${rfwUl(['<b>Chrome</b>: click the install icon at the right of the address bar, or open the ⋮ menu, choose <b>Cast, save and share</b>, then <b>Install page as app</b>.','<b>Edge</b>: open the ••• menu, choose <b>Apps</b>, then <b>Install this site as an app</b>.','<b>Safari on Mac</b>: choose <b>File</b>, then <b>Add to Dock</b>.'])}
+ <div class="rfw-note">RespondFit is made for your phone. Pick iPhone or Android above for those steps.</div>`;
+ return top+seg+inst+b}
+function rfwDraw(){const el=document.getElementById('rfw');if(!el)return;const b=el.querySelector('#rfwb');
+ b.innerHTML=RFW.tab==='guide'?rfwGuide():RFW.tab==='install'?rfwInstall():rfwWelcome();
+ el.querySelectorAll('.rfw-tabs [data-rft]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.rft===RFW.tab));
+ b.querySelectorAll('[data-rft]').forEach(x=>x.onclick=()=>{RFW.tab=x.dataset.rft;rfwDraw();rfwTop()});
+ b.querySelectorAll('[data-rfos]').forEach(x=>x.onclick=()=>{RFW.os=x.dataset.rfos;rfwDraw()});
+ const p=b.querySelector('#rfwprof');if(p)p.onclick=()=>{rfwClose();page='profile';render();scrollTo(0,0)};
+ const i=b.querySelector('#rfwinst');if(i)i.onclick=async()=>{const e=RFW.bip;if(!e)return;RFW.bip=null;i.hidden=true;try{await e.prompt()}catch(x){}}}
+function rfwTop(){const el=document.getElementById('rfw');if(!el)return;const t=el.querySelector('.rfw-tabs');if(t&&el.scrollTop>t.offsetTop)el.scrollTop=t.offsetTop}
+function rfwShow(tab){rfwClose(true);if(!RFW.back)RFW.back=document.activeElement;RFW.tab=tab||'welcome';if(!RFW.os)RFW.os=rfwOS();rfwCss();
+ const nm=S&&S.profile&&S.profile.name?', '+esc(S.profile.name):'';
+ const el=document.createElement('div');el.id='rfw';
+ el.innerHTML=`<div role="dialog" aria-modal="true" aria-labelledby="rfwt" class="card rfw-card"><div class="rfw-hero"><button type="button" class="rfw-close" id="rfwx" aria-label="Close">×</button>
+ <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true"><circle cx="24" cy="24" r="19" fill="none" stroke="#243452" stroke-width="5"/><circle cx="24" cy="24" r="19" fill="none" stroke="#FF7A00" stroke-width="5" stroke-linecap="round" stroke-dasharray="100 120" transform="rotate(-80 24 24)"/><text x="24" y="29.5" text-anchor="middle" font-family="DM Sans,Arial,sans-serif" font-weight="800" font-size="15" fill="#fff">RF</text></svg>
+ <h2 id="rfwt">Welcome to RespondFit${nm}</h2><p>Fitness for first responders, built around your shifts.</p></div>
+ <div class="seg rfw-tabs" role="group" aria-label="Guide sections"><button type="button" data-rft="welcome">Welcome</button><button type="button" data-rft="guide">How to use</button><button type="button" data-rft="install">Add to Home Screen</button></div>
+ <div id="rfwb" class="rfw-b"></div>
+ <div class="rfw-ft"><button type="button" id="rfwok">Got it, let’s go</button><p class="muted">Open this guide any time with the ? button on Home.</p></div></div>`;
+ el.onclick=e=>{if(e.target===el)rfwClose()};document.body.appendChild(el);document.body.style.overflow='hidden';document.addEventListener('keydown',rfwKey);
+ el.querySelectorAll('.rfw-tabs [data-rft]').forEach(x=>x.onclick=()=>{RFW.tab=x.dataset.rft;rfwDraw();rfwTop()});
+ el.querySelector('#rfwx').onclick=el.querySelector('#rfwok').onclick=()=>rfwClose();
+ rfwDraw();try{el.querySelector('#rfwok').focus({preventScroll:true})}catch(e){}el.scrollTop=0}
+const rfwKey=e=>{if(e.key==='Escape')rfwClose()};
+function rfwClose(keep){const d=document.getElementById('rfw');if(d){d.remove();rfwMark()}document.body.style.overflow='';document.removeEventListener('keydown',rfwKey);if(!keep&&RFW.back&&RFW.back.isConnected)try{RFW.back.focus()}catch(e){}if(!keep)RFW.back=null}
+setTimeout(()=>{if(rfwSeen()||document.getElementById('cgo')||document.getElementById('wro'))return;rfwShow('welcome')},350);
 </script>
 <script>if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});</script>
 </body>
