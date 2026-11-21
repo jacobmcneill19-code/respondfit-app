@@ -9516,7 +9516,9 @@ X3['mountain-climber']={c:4,T:1900,vb:'18 28 184 184',st:'',f(e,p){const A=[41,1
  AN=x3mp(A,Ab,k),AF=x3mp(Ab,A,k);
  return{H,S,hd:tau-24,AN,AF:[AF[0]+3,AF[1]],fa:x3mix(65,25,k),ff:x3mix(25,65,k),HN:[153,172],HF:[157,172],ls:-1,as:1,hfx:0,hfy:0,shw:70}}};
 
-function figX(id){return fig3(id)||fig(EX[id][1],EQ(id))}
+var RFVID=new Set(['bench','bike','bsq','bulg','burpee','calf','cat','cool','curl','dbrow','dead','dip','dl','farmer','fpress','gsq','ham','hams','hthrust','incp','jack','lat','lpress','lunge','mtn','ohp','plank','pulld','pullup','push','rdl','row','sidep','warm','wgs']);
+function figX(id){var sv=fig3(id)||fig(EX[id]?EX[id][1]:'',EQ(id));if(!RFVID.has(id))return sv;
+ return'<div class="rfv" style="max-width:380px;margin:0 auto;border-radius:12px;overflow:hidden;background:#dde3ea;aspect-ratio:1/1"><video src="ex/'+id+'.mp4" muted loop playsinline preload="metadata" '+(RM?'':'autoplay ')+'controls aria-label="Video demonstration: '+esc(EX[id]?EX[id][0]:id)+'" style="width:100%;height:100%;display:block;object-fit:cover" onerror="var w=this.parentNode;w.insertAdjacentHTML(\'beforebegin\',this.nextElementSibling.innerHTML);w.remove()"></video><template>'+sv.replace(/<\/template>/g,'')+'</template></div>'}
 /* ===== Feedback sub tab ===== */
 let FKMAIL='';
 let FK={items:[],all:{},cat:'Idea',rate:0,text:'',name:'',contact:'',file:null,msg:'',busy:false,done:false,err:false,sent:null};
