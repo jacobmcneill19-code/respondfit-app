@@ -90,7 +90,9 @@ button:disabled{opacity:.5;cursor:not-allowed}
 #restbar[hidden]{display:none}
 #restbar button{background:var(--bg);color:var(--ink)}
 #wkhead{position:sticky;top:0;z-index:6;background:var(--bg);margin:0 -18px;padding:calc(env(safe-area-inset-top,0px) + 8px) 18px 8px;border-bottom:1px solid var(--line)}
-body{padding-bottom:calc(98px + env(safe-area-inset-bottom,0px))}
+body{padding-bottom:calc(98px + env(safe-area-inset-bottom,0px));overscroll-behavior-y:none}
+nav{transform:translate3d(0,0,0);-webkit-transform:translate3d(0,0,0);will-change:transform;box-sizing:border-box;min-height:calc(68px + env(safe-area-inset-bottom,0px))}
+nav button{height:56px;min-height:56px}
 nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative;line-height:1.15}
 nav button svg{display:block}
 nav:has(button:nth-child(7)) button{font-size:10.5px;letter-spacing:-.02em}
@@ -297,6 +299,7 @@ function profile(){const P=S.profile,n=(id,l,v,x='')=>`<div><label for="${id}">$
  <section class="card"><h2>App guide</h2><p class="muted">How everything works, and how to add RespondFit to your Home Screen.</p><div class="grid"><button class="ghost" type="button" data-rfw="welcome">Show welcome screen</button><button class="ghost" type="button" data-rfw="guide">How to use RespondFit</button><button class="ghost" type="button" data-rfw="install">Add to Home Screen</button></div></section>
  <section class="card"><h2>Your data</h2><p class="muted">Download a backup of your workouts, check-ins and settings, or restore one on this device. Progress photos aren’t included.</p><div class="grid"><button class="ghost" id="exp" type="button">Download backup</button><button class="ghost" id="impb" type="button">Restore backup</button></div><input type="file" id="imp" accept=".json,application/json" hidden><div id="bkout" role="status" class="muted" style="margin-top:10px"></div></section>
  ${window.RFA&&RFA.push&&(PUSH_ON||ISCOACH)?'<section class="card" id="pshc"></section>':''}
+ <section class="card" id="rfpermc"></section>
  <section class="card"><h2>Account</h2><p class="muted" id="rfacct"></p><button class="ghost" id="rfso">Sign out</button></section>
  <section class="card"><h2>Reset</h2><p class="muted">Clear all workouts, check-ins and profile details from this browser.</p><button class="ghost" id="reset">Delete all my data</button></section> <section class="card"><h2>Privacy</h2><p class="muted">How RespondFit collects, uses and protects your information, including your health and fitness data.</p><a class="ghost" href="privacy.html" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none;text-align:center">Read the Privacy Policy</a></section>`}
 
@@ -8429,7 +8432,7 @@ function foodMeal(m,ents){const k=ents.reduce((a,x)=>a+(+x.cal||0),0);return`<se
 function drawFood(){const el=$('#fd');if(!el)return;const d=FS.date||(FS.date=today()),T=macroTargets(),tot=dayTotals(d),ents=FD().log.filter(x=>x.date===d);
  const rem=T?T.cal-tot.cal:0,wk=[...Array(7)].map((_,i)=>{const x=shiftDay(today(),i-6);return{d:x,t:dayTotals(x)}}),mx=Math.max(T?T.cal:0,...wk.map(x=>x.t.cal),1);
  const PC=!!FD().pct,mk=tot.p*4+tot.c*4+tot.f*9,mac=(l,v,t,k)=>`<div><div class="row"><span>${l}</span><span class="muted">${PC?(t?Math.round(v/t*100):(mk>0?Math.round(v*k/mk*100):0))+'%':nI(v)+(t?' / '+t:'')+' g'}</span></div>${t?barBar(v,t,v>t*1.1):''}</div>`;
- el.innerHTML=`<h1 style="margin-top:4px">Food diary</h1><p class="muted" style="margin:0 0 6px">Log what you eat and track calories and macros against your daily target.</p>
+ el.innerHTML=`<div class="row" style="align-items:center"><h1 style="margin:4px 0 0">Food diary</h1><button class="small" data-qscan style="flex:none">Scan barcode</button></div><p class="muted" style="margin:0 0 6px">Log what you eat and track calories and macros against your daily target.</p>
  <section class="card"><div class="row" style="align-items:center;margin-bottom:10px"><button class="ghost small" id="fprev" aria-label="Previous day">←</button><b>${fdDate(d)}</b><button class="ghost small" id="fnext" aria-label="Next day" ${d>=today()?'disabled':''}>→</button></div>
  <div class="seg" role="group" aria-label="Show totals as" style="margin:0 0 10px"><button data-fpc="0" aria-pressed="${!PC}">Amounts</button><button data-fpc="1" aria-pressed="${PC}">Percent</button></div><p style="margin:0"><span class="big" style="font-size:44px">${PC&&T?Math.round(tot.cal/T.cal*100)+'%':tot.cal.toLocaleString()}</span> <span class="muted">${PC&&T?'of '+T.cal.toLocaleString()+' kcal ('+tot.cal.toLocaleString()+' logged)':T?'of '+T.cal.toLocaleString()+' kcal':'kcal'}</span></p>${T?barBar(tot.cal,T.cal,tot.cal>T.cal*1.05)+`<p class="muted" style="margin:-4px 0 12px;font-size:14px" role="status">${rem>=0?nI(rem).toLocaleString()+' kcal left':nI(-rem).toLocaleString()+' kcal over'}</p>`:`<p class="muted" style="font-size:14px">Use the calculator above to set a daily target.</p>`}
  <div class="grid" style="margin-top:6px;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;font-size:14px">${mac('Protein',tot.p,T&&T.pr,4)}${mac('Carbs',tot.c,T&&T.carb,4)}${mac('Fat',tot.f,T&&T.fat,9)}</div>${PC?`<p class="muted" style="margin:8px 0 0;font-size:13px">${T?'Percent of your daily target.':'Share of the calories you have logged. Set a daily target above to see progress against goals.'}</p>`:''}</section>
@@ -8680,6 +8683,7 @@ function nutrition(){if(NS.sub==='diary')return nutBack()+'<div id="fd"></div>';
  const T=macroTargets(),tot=dayTotals(today()),pl=MP().plan,avg=pl?Math.round(pl.days.reduce((a,d)=>a+dayV(d).cal,0)/7):0;
  const card=(k,t,d,s)=>`<button class="ncard" data-nut="${k}">${rfIco(k)}<span style="flex:1;min-width:0"><b>${t}</b><span class="muted" style="display:block;font-size:14px;font-weight:400">${d}</span><span style="display:block;font-size:14px;font-weight:600;color:var(--accent-ink);margin-top:6px">${s}</span></span><span aria-hidden="true" style="font-size:22px;color:var(--muted)">›</span></button>`;
  return`<h1>Nutrition</h1><p class="muted" style="margin:0 0 6px">Plan what you eat, track it, and know your numbers.</p>
+ <button data-qscan style="width:100%;margin:4px 0 10px">Quick add with barcode</button>
  ${card('diary','Food diary','Log meals by hand or barcode and track calories and macros.',T?tot.cal.toLocaleString()+' of '+T.cal.toLocaleString()+' kcal today':tot.cal.toLocaleString()+' kcal today')}
  ${card('calc','Macro calculator','Work out your daily calories, protein, carbs and fat.',T?'Target '+T.cal.toLocaleString()+' kcal a day':'Set your daily target')}
  ${card('plan','Meal planner','Build a weekly plan from healthy meals, with a shopping list.',pl?'Week plan ready · about '+avg.toLocaleString()+' kcal a day':'Build a plan for the week')}`}
@@ -10146,6 +10150,22 @@ document.addEventListener('click',function(e){var b=e.target&&e.target.closest&&
 var RFKW=0,rfUa0=unsubAll;unsubAll=function(){RFKW=0;return rfUa0.apply(this,arguments)};
 function rfProfFb(){try{if(page!=='profile'||!document.getElementById('fbk'))return;if(DB&&!noShare()){if(!RFKW){RFKW=1;fkWire()}else drawFK()}else drawFK()}catch(e){}}
 var rfDs0=drawSub;drawSub=function(){rfDs0();rfProfFb()};
+/* Round 2: one-tap barcode scan, permissions helper */
+function rfMealNow(){var h=new Date().getHours();return h<10?'Breakfast':h<15?'Lunch':h<21?'Dinner':'Snacks'}
+document.addEventListener('click',function(e){var b=e.target&&e.target.closest&&e.target.closest('[data-qscan]');if(!b)return;e.preventDefault();
+ try{page='nutrition';NS.sub='diary';FS.meal=rfMealNow();FS.open=true;FS.tab='bar';FS.pick=null;FS.msg='';render();scrollTo(0,0);startScan(null)}catch(x){}});
+var RFPM=[['camera','Camera','Barcode scanner'],['geolocation','Location','GPS runs'],['notifications','Notifications','Reminders']];
+function rfPerm(n){try{if(!navigator.permissions||!navigator.permissions.query)return Promise.resolve('unknown');return navigator.permissions.query({name:n}).then(function(r){return r.state},function(){return'unknown'})}catch(e){return Promise.resolve('unknown')}}
+function rfDrawPerm(){var el=document.getElementById('rfpermc');if(!el||page!=='profile')return;
+ Promise.all(RFPM.map(function(m){return rfPerm(m[0])})).then(function(st){if(!document.getElementById('rfpermc'))return;
+  var lab={granted:'Allowed',denied:'Blocked',prompt:'Asks each time',unknown:'Cannot check here'};
+  el.innerHTML='<h2>Permissions</h2><p class="muted" style="margin:0 0 10px;font-size:14px">Your phone decides whether to ask for access again, not RespondFit. Choose <b>Allow</b> (not “Allow once”) when asked and it should stay on.</p>'+
+   RFPM.map(function(m,i){var s=st[i];return'<div class="row" style="align-items:center;margin:8px 0"><span><b>'+m[1]+'</b><span class="muted" style="display:block;font-size:13px">'+m[2]+'</span></span><span style="display:flex;gap:8px;align-items:center;flex:none"><span class="tag" style="margin:0">'+lab[s]+'</span>'+((s==='prompt'&&m[0]!=='notifications')?'<button class="ghost small" data-pgrant="'+m[0]+'">Allow now</button>':'')+'</span></div>'}).join('')+
+   '<details><summary><span>If it keeps asking</span><span class="muted">▾</span></summary><p class="muted" style="font-size:14px;margin:8px 0 0"><b>iPhone:</b> open Settings, then Apps, then Safari, and set Camera and Location to Allow. Apps added to the Home Screen can still ask once each time they open.<br><b>Android:</b> in Chrome open the menu, then Settings, Site settings, and set Camera and Location to Allow for respondfitapp.com.<br>Exact menus vary by phone.</p></details>';
+  el.querySelectorAll('[data-pgrant]').forEach(function(b){b.onclick=function(){var k=b.getAttribute('data-pgrant');b.disabled=true;
+   var done=function(){rfDrawPerm()};
+   try{if(k==='camera')navigator.mediaDevices.getUserMedia({video:true}).then(function(s){s.getTracks().forEach(function(t){t.stop()});done()},done);else navigator.geolocation.getCurrentPosition(done,done,{timeout:10000})}catch(x){done()}}})})}
+var rfDs2=drawSub;drawSub=function(){rfDs2();rfDrawPerm()};
 try{nav()}catch(e){}
 </script>
 <script>if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});</script>
