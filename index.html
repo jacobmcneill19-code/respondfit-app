@@ -8665,8 +8665,48 @@ function mAvg(pl){const n=pl.days.length||1,a=pl.days.reduce((x,d)=>{const v=day
 
 const SLOTN={B:'Breakfast',L:'Lunch',D:'Dinner',S:'Snacks'},SLOTT=k=>k==='B'?'B':k==='S'?'S':'LD';
 const GCAT={p:'Fruit and veg',m:'Meat and fish',d:'Dairy and eggs',b:'Bakery',g:'Pantry'};
+
+/* Allergy and dislike matching: groups such as seafood, nuts and dairy expand to the foods in them */
+var MPT={
+ shellfish:['prawn','shrimp','crab','lobster','crayfish','yabby','yabbie','mussel','oyster','scallop','clam','squid','calamari','octopus','cuttlefish','abalone','shellfish','crustacean','mollusc'],
+ fish:['fish','salmon','tuna','barramundi','cod(?![a-z])','snapper','bream','sardine','anchov','mackerel','trout','whiting','hoki','herring','flathead','basa(?![a-z])','roe(?![a-z])','caviar','kingfish','swordfish','mahi'],
+ peanut:['peanut','groundnut'],
+ treenut:['almond','cashew','walnut','pecan','pistachio','hazelnut','macadamia','brazil nut','pine nut','chestnut','praline','marzipan','nutella','nut(?![a-z])','nuts(?![a-z])'],
+ dairy:['milk','cheese','feta','cottage','yoghurt','yogurt','cream','butter','ghee','whey','casein','parmesan','mozzarella','ricotta','kefir','custard','haloumi','halloumi','paneer','lactose','dairy'],
+ egg:['egg(?!plant)','mayo','omelette','frittata','meringue'],
+ wheat:['wheat','wholemeal','bread','roll(?![a-z])','pasta','pita','pitta','wrap(?![a-z])','couscous','flour','semolina','spelt','bulgur','noodle','muesli','soy sauce','cracker','crumb','biscuit','pizza'],
+ gluten:['wheat','wholemeal','bread','roll(?![a-z])','pasta','pita','pitta','wrap(?![a-z])','rye','barley','couscous','flour','semolina','spelt','bulgur','noodle','muesli','soy sauce','cracker','crumb','biscuit','pizza'],
+ soy:['soy','soya','tofu','edamame','tempeh','miso','tamari'],
+ sesame:['sesame','tahini','hummus'],
+ pork:['pork','bacon','ham(?![a-z])','prosciutto','chorizo','salami','pancetta'],
+ beef:['beef','veal','steak'],
+ lamb:['lamb','mutton'],
+ chicken:['chicken'],
+ turkey:['turkey'],
+ poultry:['chicken','turkey','duck','poultry'],
+ redmeat:['beef','veal','steak','lamb','mutton','pork','bacon','ham(?![a-z])','prosciutto','chorizo','salami','pancetta','kangaroo','venison'],
+ meat:['beef','veal','steak','lamb','mutton','pork','bacon','ham(?![a-z])','prosciutto','chorizo','salami','pancetta','kangaroo','venison','chicken','turkey','duck','poultry','sausage','mince(?![a-z])'],
+ mushroom:['mushroom'],onion:['onion','shallot'],garlic:['garlic'],coriander:['coriander','cilantro']};
+['shellfish','fish','peanut','treenut'].forEach(function(k){});
+MPT.seafood=MPT.fish.concat(MPT.shellfish);MPT.nuts=MPT.peanut.concat(MPT.treenut);
+var MPA={seafood:'seafood',shellfish:'shellfish',crustacean:'shellfish',mollusc:'shellfish',fish:'fish',peanut:'peanut',groundnut:'peanut','tree nut':'treenut',treenut:'treenut',nut:'nuts',dairy:'dairy',milk:'dairy',lactose:'dairy',egg:'egg',gluten:'gluten',coeliac:'gluten',celiac:'gluten',wheat:'wheat',soy:'soy',soya:'soy',sesame:'sesame',pork:'pork',beef:'beef',lamb:'lamb',chicken:'chicken',turkey:'turkey',poultry:'poultry','red meat':'redmeat',meat:'meat',mushroom:'mushroom',onion:'onion',garlic:'garlic',coriander:'coriander',cilantro:'coriander'};
+var MPR={};Object.keys(MPT).forEach(function(k){MPR[k]=new RegExp('(?:^|[^a-z])(?:'+MPT[k].join('|')+')')});
+function mpSan(k,h){if(k==='dairy')return h.replace(/(soy|coconut|almond|oat|rice|cashew)\s+(milk|cream|yoghurt|yogurt)/g,' ').replace(/(peanut|almond|nut|cashew)\s+butter/g,' ').replace(/cocoa butter/g,' ');
+ if(k==='gluten'||k==='wheat')return h.replace(/rice\s+noodles?|rice\s+paper|rice\s+cakes?|corn\s+tortillas?|rice\s+bread/g,' ');
+ if(k==='egg')return h.replace(/eggplant/g,' ');return h}
+function mpHay(m,full){return(' '+String(m.name||'')+' '+(m.ing||[]).map(function(i){return i.n}).join(' ')+(full?' '+String(m.how||''):'')).toLowerCase()}
+function mpHit(m,keys){var h=mpHay(m);return keys.some(function(k){return MPR[k]&&MPR[k].test(mpSan(k,h))})}
+function mpKey(w){w=String(w).toLowerCase().replace(/[^a-z ]/g,' ').replace(/\s+/g,' ').trim();if(MPA[w])return MPA[w];var s=w.replace(/(es|s)$/,'');if(MPA[s])return MPA[s];s=w.replace(/s$/,'');return MPA[s]||''}
+function mpList(ex){return String(ex||'').split(/[,;\n]|\s+and\s+|\s+or\s+/i).map(function(x){return x.trim().toLowerCase()}).filter(function(x){return x.length>1})}
+function mpExcl(m,ex){if(!ex.length)return false;var h=mpHay(m),f=mpHay(m,true);
+ return ex.some(function(w){var k=mpKey(w);if(k&&MPR[k]&&MPR[k].test(mpSan(k,h)))return true;
+  var e=w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),v=[e];if(/s$/.test(w)&&w.length>3)v.push(e.replace(/e?s$/,''));
+  return new RegExp('(?:^|[^a-z])(?:'+v.join('|')+')').test(f)})}
+function mpWarn(pl){var pr=MP().prefs,bad=[];pl.days.forEach(function(d){d.s.forEach(function(sl){var m=GM(sl.id);if(m&&!mealOK(m,pr)&&bad.indexOf(m.name)<0)bad.push(m.name)})});
+ return bad.length?'<p role="alert" style="margin:10px 0 0;padding:10px 12px;border-radius:10px;background:var(--hi);color:var(--hi-ink);font-size:14px"><b>Heads up:</b> '+bad.length+' meal'+(bad.length>1?'s':'')+' in this plan ('+esc(bad.slice(0,3).join(', '))+(bad.length>3?' and more':'')+') no longer match what you have left out or chosen. Tap <b>Rebuild my week</b> to fix it.</p>':''}
+
 function mealOK(m,pr){const t=m.tags;if(pr.veg&&!(t.includes('veg')||t.includes('vg')))return false;if(pr.df&&!(t.includes('df')||t.includes('vg')))return false;if(pr.gf&&!t.includes('gf'))return false;if(pr.quick&&m.min>15)return false;
- const ex=String(pr.ex||'').toLowerCase().split(',').map(x=>x.trim()).filter(x=>x.length>1);if(ex.length){const h=(m.name+' '+m.ing.map(i=>i.n).join(' ')).toLowerCase();if(ex.some(e=>h.includes(e)))return false}return true}
+ if(pr.veg&&mpHit(m,['meat','seafood']))return false;if(pr.df&&mpHit(m,['dairy']))return false;if(pr.gf&&mpHit(m,['gluten']))return false;return!mpExcl(m,mpList(pr.ex))}
 const SHARE=n=>n===0?{B:.25,L:.35,D:.40}:n===1?{B:.25,L:.30,D:.35,S:.10}:{B:.22,L:.28,D:.32,S:.09};
 const mMult=(m,t)=>Math.max(.5,Math.min(2,Math.round(t/m.cal*4)/4));
 function pickMeal(k,target,pr,used,dayUsed,skip,mt){const el=allMD(pr).filter(m=>m.slot===SLOTT(k)&&mealOK(m,pr)&&!dayUsed.has(m.id)&&m.id!==skip);if(!el.length)return null;
@@ -8690,11 +8730,11 @@ function planView(){const sg=`<div class="seg" role="group" aria-label="Meal pla
 function planMain(){const R=MP(),pr=R.prefs,pl=R.plan,tg=pl?pl.tg:(+pr.cal||(macroTargets()||{cal:2000}).cal),ti=(new Date().getDay()+6)%7;
  const set=`<section class="card"><h2>${pl?'Plan settings':'Build your weekly meal plan'}</h2><p class="muted" style="margin:0 0 12px;font-size:14px">Pick your preferences and RespondFit builds seven days of healthy meals around your daily calories, with portions sized to fit and a shopping list.</p><div class="stack">${mpMacroBlock()}<div class="grid"><div><label for="mps">Snacks per day</label><select id="mps">${[0,1,2].map(n=>`<option ${+pr.snacks===n?'selected':''}>${n}</option>`).join('')}</select></div></div>
  <fieldset style="border:0;padding:0;margin:0"><legend style="font-size:14px;color:var(--muted);margin-bottom:6px">Preferences</legend><div class="row" style="flex-wrap:wrap;justify-content:flex-start;gap:8px">${[['veg','Vegetarian'],['df','Dairy-free'],['gf','Gluten-free'],['quick','Quick, 15 min or less'],['comm','Include member recipes']].map(([k,l])=>`<label style="display:flex;gap:6px;align-items:center;margin:0;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)"><input type="checkbox" data-mpp="${k}" style="width:auto;min-height:0" ${(k==='comm'?pr.comm!==false:pr[k])?'checked':''}>${l}</label>`).join('')}</div></fieldset>
- <div><label for="mpx">Leave out (optional, comma separated)</label><input id="mpx" maxlength="120" value="${esc(pr.ex||'')}" placeholder="e.g. fish, mushroom, peanut"></div><p id="mpm" role="status" class="muted" style="margin:0"></p><div><button id="mpb">${pl?'Rebuild my week':'Build my week'}</button></div></div></section>`;
+ <div><label for="mpx">Leave out (optional, comma separated)</label><input id="mpx" maxlength="120" value="${esc(pr.ex||'')}" placeholder="e.g. seafood, nuts, mushroom"><span class="muted" style="display:block;font-size:13px;margin-top:4px">Works for groups like seafood, shellfish, fish, nuts, peanuts, dairy, eggs, gluten, soy, sesame, pork, beef and chicken, or any single ingredient. For a serious allergy, always check the ingredients yourself too.</span></div><p id="mpm" role="status" class="muted" style="margin:0"></p><div><button id="mpb">${pl?'Rebuild my week':'Build my week'}</button></div></div></section>`;
  if(!pl)return set+planSrc();
  const days=pl.days.map((d,i)=>{const v=dayV(d),dt=mDate(i);return`<details ${i===ti?'open':''}><summary><span>${DAYS[i]}${i===ti?' · today':''}</span><span class="muted">${v.cal} kcal</span></summary>${d.s.map((sl,j)=>mealSlot(i,j,sl)).join('')}<div class="row" style="margin-top:10px;align-items:center;gap:8px"><span class="muted" style="font-size:14px">P ${n1(v.p)} · C ${n1(v.c)} · F ${n1(v.f)}${tg?' · target '+tg:''}</span><button class="ghost small" data-mday="${i}">Log whole day</button></div></details>`}).join('');
  const avg=Math.round(pl.days.reduce((a,d)=>a+dayV(d).cal,0)/7),G=grocery(pl),cats=Object.keys(GCAT).map(k=>[k,G.filter(x=>x.k===k).sort((a,b)=>a.n.localeCompare(b.n))]).filter(x=>x[1].length);
- return`<section class="card"><h2>Your week</h2><p style="margin:0">Average <b>${avg.toLocaleString()} kcal</b> a day <span class="muted">· target ${tg.toLocaleString()}</span></p>${mAvg(pl)}<p id="mmsg" role="status" class="muted" style="margin:6px 0 0;font-size:14px">${esc(NS.msg||'')}</p></section><section class="card">${days}</section>
+ return`<section class="card"><h2>Your week</h2><p style="margin:0">Average <b>${avg.toLocaleString()} kcal</b> a day <span class="muted">· target ${tg.toLocaleString()}</span></p>${mAvg(pl)}${mpWarn(pl)}<p id="mmsg" role="status" class="muted" style="margin:6px 0 0;font-size:14px">${esc(NS.msg||'')}</p></section><section class="card">${days}</section>
  <section class="card"><h2>Shopping list</h2><p class="muted" style="margin:0 0 6px;font-size:14px">Everything for the week, with amounts added up. Tick items as you shop.</p>${cats.map(([k,L])=>`<h3 style="font-size:15px;margin:12px 0 2px">${GCAT[k]}</h3>${L.map(x=>`<label class="rk" style="color:var(--ink);font-size:16px;margin:0;padding:6px 0"><input type="checkbox" data-mgot="${esc(x.key)}" ${R.got[x.key]?'checked':''} style="width:20px;min-height:20px;flex:none"><span style="${R.got[x.key]?'text-decoration:line-through;color:var(--muted)':''}">${esc(x.n)}: <b>${fQ(x.q,x.u)}</b></span></label>`).join('')}`).join('')}<div class="row" style="margin-top:10px;justify-content:flex-start;gap:8px;flex-wrap:wrap"><button class="small" id="mshr">Share list</button><button class="ghost small" id="mclr">Clear ticks</button></div><p id="mshm" class="muted" role="status" style="margin:8px 0 0;font-size:13px"></p></section>`+set+planSrc()}
 function shopText(){const R=MP(),pl=R.plan;if(!pl||!pl.days)return'';const G=grocery(pl),all=G.length&&G.every(x=>R.got[x.key]),out=['Shopping list'];Object.keys(GCAT).forEach(k=>{const L=G.filter(x=>x.k===k&&(all||!R.got[x.key])).sort((a,b)=>a.n.localeCompare(b.n));if(L.length){out.push('','\u2022 '+GCAT[k].toUpperCase());L.forEach(x=>out.push('\u2610 '+x.n+': '+fQ(x.q,x.u)))}});out.push('','From RespondFit');return out.join('\n')}
 async function shareShop(){const m=$('#mshm'),t=shopText();if(!t){if(m)m.textContent='Nothing to share yet.';return}
