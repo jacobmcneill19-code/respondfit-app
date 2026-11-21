@@ -1,5 +1,5 @@
 /* RespondFit service worker: lets the app open and run workouts without a connection. */
-const V = 'rf-v30', SHELL = ['./', 'index.html', 'rf-adapter.js', 'firebase-config.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
+const V = 'rf-v31', SHELL = ['./', 'index.html', 'rf-adapter.js', 'firebase-config.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(k => Promise.all(k.filter(x => x !== V).map(x => caches.delete(x)))).then(() => self.clients.claim())); });
 self.addEventListener('push', e => {
@@ -15,7 +15,7 @@ self.addEventListener('notificationclick', e => {
 });
 self.addEventListener('fetch', e => {
   const r = e.request, u = new URL(r.url);
-  if (r.method !== 'GET') return;
+  if (r.method !== 'GET' || r.headers.has('range') || /\.mp4$/.test(new URL(r.url).pathname)) return; /* videos stream straight from the network */
   const own = u.origin === location.origin, lib = u.hostname === 'www.gstatic.com' && u.pathname.startsWith('/firebasejs/'), font = u.hostname === 'fonts.googleapis.com' || u.hostname === 'fonts.gstatic.com';
   if (!own && !lib && !font) return; /* sign-in, database and photos always go to the network */
   e.respondWith(caches.open(V).then(async c => {
