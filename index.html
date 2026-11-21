@@ -89,6 +89,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 #restbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(72px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);border-radius:99px;padding:6px 8px 6px 18px;display:flex;align-items:center;gap:14px;font-weight:600;z-index:5;box-shadow:0 2px 10px rgba(0,0,0,.25)}
 #restbar[hidden]{display:none}
 #restbar button{background:var(--bg);color:var(--ink)}
+#wkhead{position:sticky;top:0;z-index:6;background:var(--bg);margin:0 -18px;padding:calc(env(safe-area-inset-top,0px) + 8px) 18px 8px;border-bottom:1px solid var(--line)}
 .dot{background:var(--accent);color:var(--on-accent);border-radius:99px;padding:0 6px;font-size:11px;margin-left:4px}
 .rest{border-top:1px solid var(--line);margin-top:10px;padding-top:10px}
 .msg{max-width:80%;padding:8px 12px;border-radius:14px;background:var(--bg);align-self:flex-start;overflow-wrap:anywhere}
@@ -8258,11 +8259,11 @@ function dingURL(){const sr=32000,dur=1.6,n=Math.floor(sr*dur),u=new Uint8Array(
  const rel=Math.floor(sr*.08);for(let i=0;i<n;i++){const v=out[i]/pk*.85*(i>n-rel?(n-i)/rel:1);dv.setInt16(44+2*i,Math.max(-1,Math.min(1,v))*32767,true)}
  return URL.createObjectURL(new Blob([u],{type:'audio/wav'}))}
 function whEl(){if(!WURL)WURL=dingURL();if(!WA){WA=new Audio(WURL);WA.preload='auto'}return WA}
-function whUnlock(){try{const a=whEl();a.muted=true;const p=a.play();if(p&&p.then)p.then(()=>{a.pause();a.currentTime=0;a.muted=false}).catch(()=>{a.muted=false})}catch(e){}}
+function whUnlock(){rfAmbient();try{const a=whEl();a.muted=true;const p=a.play();if(p&&p.then)p.then(()=>{a.pause();a.currentTime=0;a.muted=false}).catch(()=>{a.muted=false})}catch(e){}}
 function whistle(){try{const a=whEl();a.muted=false;a.currentTime=0;const p=a.play();if(p&&p.catch)p.catch(dingTone);return true}catch(e){return false}}
-function ding(){if(S.restSound!==false){if(!whistle())dingTone()}try{navigator.vibrate&&navigator.vibrate(200)}catch(e){}}
-function restSnd(){S.restSound=S.restSound===false;save();rbLabel()}
-function rbLabel(){const b=document.getElementById('rbs');if(b)b.textContent=S.restSound===false?'Sound off':'Sound on'}
+function ding(){if(S.restSound!==false){rfAmbient();if(!whistle())dingTone()}if(S.restVib!==false){try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}}rfFlash()}
+function restSnd(){const v=!!navigator.vibrate,s=S.restSound!==false,b=S.restVib!==false;if(v){if(s&&b)S.restVib=false;else if(s&&!b){S.restSound=false;S.restVib=true}else if(!s&&b)S.restVib=false;else{S.restSound=true;S.restVib=true}}else S.restSound=!s;save();rbLabel()}
+function rbLabel(){const b=document.getElementById('rbs');if(!b)return;const s=S.restSound!==false,vs=!!navigator.vibrate,v=vs&&S.restVib!==false;b.textContent=s&&v?'Sound + buzz':s?(vs?'Sound only':'Sound on'):v?'Buzz only':(vs?'Muted':'Sound off')}
 function restShow(i,txt,pct,btn){const rb=document.getElementById('restbar');if(rb){rb.hidden=btn!=='Skip rest';document.getElementById('rbt').textContent='Rest '+txt;rbLabel()}const t=document.querySelector(`[data-rt="${i}"]`),b=document.querySelector(`[data-rb="${i}"]`),k=document.querySelector(`[data-rs="${i}"]`);if(t)t.textContent=txt;if(b)b.style.width=pct+'%';if(k)k.textContent=btn}
 function restStop(){const i=R.i;clearInterval(rtick);R.i=-1;if(i>=0)restShow(i,'Ready',0,'Start rest')}
 function restStart(i){const s=S.sess;if(!s)return;restStop();whUnlock();try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}const t=s.ex[i].rest||60;R={i,end:Date.now()+t*1000,tot:t};rtick=setInterval(restTick,250);restTick()}
@@ -8272,7 +8273,7 @@ function checkPR(i,t){const e=S.sess.ex[i],E=EX[e.id],H=hist(e.id);if(!H.last)re
 function exCard(x,i){const E=EX[x.id],u={reps:'Reps',sec:'Seconds',min:'Minutes'}[E[4]];
  const H=hist(x.id),un={reps:'reps',sec:'sec',min:'min'}[E[4]],hl=H.last?`<div class="muted" style="font-size:14px;margin:8px 0 0">Last time: ${E[3]?W(H.last.kg)+' '+WU()+' × '+H.last.reps:H.last.reps+' '+un} · Best: ${E[3]?W(H.bk)+' '+WU():H.br+' '+un}</div>`:'';
  const tip=INFO[x.id]?(()=>{const[a,b]=INFO[x.id].split('#');return`<details class="how"><summary><span>How to do it</span><span class="muted">▾</span></summary><ol class="muted" style="margin:8px 0;padding-left:20px">${a.split('|').map(t=>`<li>${t}</li>`).join('')}</ol><p style="margin:0 0 4px"><b>Common mistakes</b></p><ul class="muted" style="margin:0 0 6px;padding-left:20px">${b.split('|').map(t=>`<li>${t}</li>`).join('')}</ul><p class="muted" style="font-size:13px;margin:0">Stop if you feel sharp pain.</p></details>`})():'';
- return`<section class="card"><div class="row" style="align-items:center"><div><h2 style="margin:0">${E[0]}</h2><span class="muted" style="font-size:14px">${E[2]} · Primary muscle: <b>${muscle(x.id)}</b></span></div><button class="ghost small" data-swap="${i}">Swap</button></div>${hl}<div data-prm="${i}" role="status" style="font-weight:600;color:var(--accent-ink);margin-top:4px">${x.pr?'New best this session':''}</div>
+ return`<section class="card"><div class="row" style="align-items:center"><div><h2 style="margin:0">${E[0]}</h2><span class="muted" style="font-size:14px">${E[2]} · Primary muscle: <b>${muscle(x.id)}</b></span></div><button class="ghost small" data-swap="${i}">Swap</button></div>${hl}${rfPrev(x,i)}<div data-prm="${i}" role="status" style="font-weight:600;color:var(--accent-ink);margin-top:4px">${x.pr?'New best this session':''}</div>
 ${sw===i?`<div class="stack" style="margin:10px 0"><p class="muted" style="margin:0">Swap for another ${E[2].toLowerCase()} exercise:</p><div data-pk="${i}" data-pg0="${E[2]}"></div></div>`:''}
 <details data-d="${i}" ${op[i]===false?'':'open'}><summary><span>Watch demo</span><span class="muted">▾</span></summary>${figX(x.id)}</details>${tip}
 <div class="set muted" style="font-size:14px"><span>Set</span><span>${E[3]?WU():''}</span><span>${u}</span><span></span></div>
@@ -8280,7 +8281,7 @@ ${x.sets.map((s,j)=>`<div class="set ${s.done?'done':''}"><span>${j+1}</span>${E
 <div class="rest"><div class="row" style="align-items:center"><span class="muted">Rest between sets</span><span class="row" style="gap:6px;align-items:center"><button class="ghost small" data-rd="${i}:-15" aria-label="Shorten rest by 15 seconds">−15s</button><b data-rv="${i}" role="status">${fmt(x.rest||60)}</b><button class="ghost small" data-rd="${i}:15" aria-label="Lengthen rest by 15 seconds">+15s</button></span></div><div class="bar" style="margin:10px 0 6px"><i data-rb="${i}" style="width:0"></i></div><div class="row" style="align-items:center"><span data-rt="${i}" class="muted" role="timer">Ready</span><button class="small" data-rs="${i}">Start rest</button></div><label style="display:flex;gap:8px;align-items:center;margin:10px 0 0;font-size:14px"><input type="checkbox" data-ra style="width:auto;min-height:0" ${S.sess&&S.sess.auto===false?'':'checked'}> Start automatically when I tick a set</label></div>
 <div class="grid"><button class="ghost small" data-add="${i}">Add set</button><button class="ghost small" data-rm="${i}">Remove set</button></div></section>`}
 function sessionView(){const s=S.sess;if(!s){page='workouts';return workouts()}
- return`<div class="row" style="align-items:center"><button class="ghost small" data-go="workouts">← Back</button><span class="big" id="el" style="font-size:28px">${fmt(Math.floor((Date.now()-s.start)/1000))}</span><button class="small" id="fin">Finish</button></div><h1>${esc(s.name)}</h1>${s.ex.map(exCard).join('')}
+ return`<div class="row" id="wkhead" style="align-items:center"><button class="ghost small" data-go="workouts">← Back</button><span class="big" id="el" style="font-size:28px">${fmt(Math.floor((Date.now()-s.start)/1000))}</span><button class="small" id="fin">Finish</button></div><h1>${esc(s.name)}</h1>${s.ex.map(exCard).join('')}
 <section class="card"><h2>Add an exercise</h2><div id="addpk" data-pg0=""></div></section><button class="ghost" id="disc">Discard workout</button>`}
 function wireSession(){const A=$('#app'),s=S.sess;if(!s)return;
  tick=setInterval(()=>{const e=$('#el');if(e)e.textContent=fmt(Math.floor((Date.now()-s.start)/1000))},1000);
@@ -10083,6 +10084,26 @@ function rfIcoSvg(n,z){return RFIC[n]?'<svg viewBox="0 0 24 24" width="'+z+'" he
 function rfIco(k){var n={workouts:'dumbbell',fit:'clipboard',running:'timer',diary:'fork',calc:'calc',plan:'calendar'}[k];return n?'<span aria-hidden="true" style="display:inline-flex;width:44px;height:44px;border-radius:12px;align-items:center;justify-content:center;flex:none;background:var(--hi);color:var(--accent-ink)">'+rfIcoSvg(n,24)+'</span>':''}
 function rfHeads(){try{document.querySelectorAll('main h2:not([data-ic])').forEach(function(h){h.setAttribute('data-ic','1');var n=RFH[h.textContent.trim()];if(!n)return;var s=document.createElement('span');s.setAttribute('aria-hidden','true');s.style.cssText='display:inline-flex;flex:none;color:var(--accent-ink)';s.innerHTML=rfIcoSvg(n,20);h.style.display='flex';h.style.alignItems='center';h.style.gap='8px';h.insertBefore(s,h.firstChild)})}catch(e){}}
 (function(){var t=0;try{new MutationObserver(function(){clearTimeout(t);t=setTimeout(rfHeads,30)}).observe(document.body,{childList:true,subtree:true})}catch(e){}rfHeads()})();
+/* Workout extras: last session set by set, keep the screen on while training */
+function rfLast(id){var b=null;[...S.workouts].sort(function(x,y){return x.date.localeCompare(y.date)||x.id-y.id}).forEach(function(w){(w.ex||[]).forEach(function(e){if(e.id===id&&e.sets&&e.sets.length)b=e.sets})});return b}
+function rfPrev(x,i){try{var L=rfLast(x.id);if(!L)return'';var E=EX[x.id],un={reps:'reps',sec:'sec',min:'min'}[E[4]];
+ var t=L.slice(0,8).map(function(s){return E[3]?W(s.kg)+' '+WU()+' × '+s.reps:s.reps+' '+un}).join(' · ');
+ return'<div class="row" style="align-items:center;gap:8px;margin-top:6px"><span class="muted" style="font-size:14px;flex:1;min-width:0">Each set last time: '+t+'</span><button type="button" class="ghost small" data-prev="'+i+'" style="flex:none">Use these</button></div>'}catch(e){return''}}
+document.addEventListener('click',function(e){var b=e.target&&e.target.closest&&e.target.closest('[data-prev]');if(!b||!S.sess)return;
+ var i=+b.getAttribute('data-prev'),x=S.sess.ex[i],L=x&&rfLast(x.id);if(!L)return;
+ x.sets.forEach(function(t,j){if(t.done)return;var p=L[Math.min(j,L.length-1)];t.kg=p.kg;t.reps=p.reps;
+  var k=document.querySelector('input[data-e="'+i+'"][data-s="'+j+'"][data-k="kg"]'),r=document.querySelector('input[data-e="'+i+'"][data-s="'+j+'"][data-k="reps"]');
+  if(k)k.value=W(p.kg);if(r)r.value=p.reps});
+ save();b.textContent='Filled';setTimeout(function(){b.textContent='Use these'},1200)});
+/* Let the rest chime mix with music instead of pausing it (where the phone allows), and flash the screen as a visual cue */
+function rfAmbient(){try{if(navigator.audioSession&&navigator.audioSession.type!=='ambient')navigator.audioSession.type='ambient'}catch(e){}}
+function rfFlash(){try{if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;var d=document.createElement('div');d.setAttribute('aria-hidden','true');d.style.cssText='position:fixed;top:0;right:0;bottom:0;left:0;z-index:700;pointer-events:none;background:var(--accent);opacity:0';document.body.appendChild(d);d.animate([{opacity:0},{opacity:.28},{opacity:0},{opacity:.28},{opacity:0}],{duration:1200}).onfinish=function(){d.remove()}}catch(e){}}
+var RFLK=null;
+function rfLkWant(){return page==='session'&&!!S.sess&&document.visibilityState==='visible'}
+async function rfLkSync(){try{if(!navigator.wakeLock)return;
+ if(rfLkWant()){if(!RFLK||RFLK.released)RFLK=await navigator.wakeLock.request('screen')}
+ else if(RFLK){var l=RFLK;RFLK=null;await l.release()}}catch(e){}}
+setInterval(rfLkSync,3000);document.addEventListener('visibilitychange',rfLkSync);rfLkSync();
 </script>
 <script>if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});</script>
 </body>
