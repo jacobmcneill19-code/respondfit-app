@@ -8438,7 +8438,7 @@ function dbWire(el){const dq=$('#dbq');if(!dq)return;
  const bo=$('#dbo');if(bo)bo.onclick=()=>dbOnline(el);
  dq.oninput=()=>{FS.dq=dq.value;FS.dbo=null;FS.dbm='';$('#dbl').innerHTML=dbRows();dbWire(el)}}
 async function dbOnline(el){const q=(FS.dq||'').trim();if(q.length<2||FS.dbBusy)return;FS.dbBusy=true;FS.dbm='';FS.dbo=null;$('#dbl').innerHTML=dbRows();dbWire(el);let L=null,m='';
- try{const base='https://world.openfoodfacts.org/cgi/search.pl?search_simple=1&action=process&json=1&page_size=24&fields=code,product_name,brands,serving_quantity,nutriments&search_terms='+encodeURIComponent(q),
+ try{const base='https://world.openfoodfacts.org/cgi/search.pl?search_simple=1&action=process&json=1&page_size=20&search_terms='+encodeURIComponent(q),
   get=async u=>{const r=await fetch(u,{signal:AbortSignal.timeout?AbortSignal.timeout(15000):undefined});if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();return(j.products||[]).map(offItem).filter(Boolean)};
   L=await get(base+'&tagtype_0=countries&tag_contains_0=contains&tag_0=australia');if(L.length<4){const M=await get(base),seen=new Set(L.map(x=>x.code));L=L.concat(M.filter(x=>!seen.has(x.code)))}L=L.slice(0,20);if(!L.length)m='No packaged foods found for that search.'}
  catch(e){L=null;m='Could not reach the Open Food Facts database ('+String((e&&e.message)||'network error').slice(0,40)+'). Check your connection and try again.'}
