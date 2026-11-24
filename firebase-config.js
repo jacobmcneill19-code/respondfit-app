@@ -15,3 +15,13 @@ window.RF_STRIPE = {
 };
 /* Map behind GPS runs (Mapbox public token, made for browser use). */
 window.RF_MAPBOX = { token: "pk.eyJ1IjoiamFjb2ItbWNuZWlsbDE5IiwiYSI6ImNtd2c4YjAydDBnd3EzMHIyaHA5NWx4NjUifQ.X3aws060lrY_1x_Mo4QoBg", style: "dark-v11" };
+
+/* Fit bot and AI plans (Gemini through Firebase AI Logic). Leave on:false until the setup steps are done. */
+window.RF_AI = {
+  on: false,
+  chatModel: "gemini-3.8-flash",
+  builderModel: "gemini-3.1-pro-preview",
+  appCheckKey: "",
+  dailyChat: 40,
+  dailyPlan: 6
+};
