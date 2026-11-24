@@ -47,6 +47,15 @@
           });
         });
       },
+      setPrefs: function (tok, prefs) {
+        if (!tok || !ST.uid) return Promise.resolve();
+        var tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
+        return FB.fs.setDoc(FB.fs.doc(ST.db, 'pushTokens', tok), { uid: ST.uid, ua: navigator.userAgent.slice(0, 120), t: Date.now(), prefs: Object.assign({ tz: tz }, prefs) }, { merge: true });
+      },
+      queue: function (o) {
+        if (!ST.uid) return Promise.reject(new Error('signin'));
+        return FB.fs.addDoc(FB.fs.collection(ST.db, 'pushQueue'), { title: String(o.title || '').slice(0, 60), body: String(o.body || '').slice(0, 160), to: o.to === 'all' ? 'all' : 'uid:' + ST.uid, by: ST.uid, t: Date.now() });
+      },
       disable: function () {
         var tok = '';
         try { tok = localStorage.getItem('rf_push_' + ST.uid) || ''; localStorage.removeItem('rf_push_' + ST.uid); } catch (e) {}
@@ -149,7 +158,58 @@
       }
     });
   };
-  caps.sample = function () { return Promise.resolve(null); }; /* Fit Bot needs a server; hidden for now */
+  /* ---------- Fit bot / AI plans: Gemini through Firebase AI Logic. The API key stays on Google's servers. Off unless RF_AI.on is true. ---------- */
+  var AIV = '12.4.0', AIBASE = 'https://www.gstatic.com/firebasejs/' + AIV + '/', aiMod = null;
+  function aiErr(code, msg) { var e = new Error(msg || code); e.code = code; return e; }
+  function aiLoad(A) {
+    if (aiMod) return aiMod;
+    aiMod = Promise.all([import(AIBASE + 'firebase-app.js'), import(AIBASE + 'firebase-ai.js')]).then(function (m) {
+      var app; try { app = m[0].getApp('rf-ai'); } catch (e) { app = m[0].initializeApp(C, 'rf-ai'); }
+      var go = A.appCheckKey ? import(AIBASE + 'firebase-app-check.js').then(function (c) { c.initializeAppCheck(app, { provider: new c.ReCaptchaV3Provider(A.appCheckKey), isTokenAutoRefreshEnabled: true }); }) : Promise.resolve();
+      return go.then(function () { return { b: m[1], ai: m[1].getAI(app, { backend: new m[1].GoogleAIBackend() }) }; });
+    });
+    aiMod.catch(function () { aiMod = null; });
+    return aiMod;
+  }
+  function aiCount(kind, cap, add) {
+    var k = 'rf_ai_' + kind + '_' + (ST.uid || '') + '_' + new Date().toISOString().slice(0, 10), n = 0;
+    try { n = +localStorage.getItem(k) || 0; if (add) localStorage.setItem(k, String(n + 1)); } catch (e) {}
+    return n >= cap;
+  }
+  caps.sample = function () {
+    var A = window.RF_AI || {};
+    if (!A.on || !ST.uid || !C.projectId) return Promise.resolve(null);
+    function run(input, opts, json) {
+      opts = opts || {};
+      var kind = json ? 'plan' : 'chat';
+      if (aiCount(kind, json ? (A.dailyPlan || 6) : (A.dailyChat || 40), false)) return Promise.reject(aiErr('rate_limited'));
+      var prompt = typeof input === 'string' ? input : (input || []).map(function (m) { return (m.role === 'user' ? 'Member: ' : 'Assistant: ') + m.content; }).join('\n');
+      var cancelled = false, timer, gone = new Promise(function (_, rej) {
+        if (opts.signal) { if (opts.signal.aborted) rej(aiErr('cancelled')); else opts.signal.addEventListener('abort', function () { cancelled = true; rej(aiErr('cancelled')); }); }
+        timer = setTimeout(function () { rej(aiErr('timeout')); }, json ? 90000 : 45000);
+      });
+      var work = aiLoad(A).then(function (m) {
+        var gen = m.b.getGenerativeModel(m.ai, { model: (json ? A.builderModel : A.chatModel) || A.model || 'gemini-3.8-flash', generationConfig: json ? { responseMimeType: 'application/json', temperature: 0.5, maxOutputTokens: 8192 } : { temperature: 0.7, maxOutputTokens: 700 } });
+        return gen.generateContent(prompt);
+      }).then(function (r) { return r.response.text(); });
+      return Promise.race([work, gone]).then(function (t) { clearTimeout(timer); aiCount(kind, 0, true); return String(t || ''); }, function (e) {
+        clearTimeout(timer);
+        if (e && e.code === 'cancelled') throw e;
+        var m = String((e && (e.code || '') + ' ' + (e && e.message || '')).toLowerCase());
+        if (/429|quota|rate|exhaust/.test(m)) throw aiErr('rate_limited');
+        if (/403|permission|not enabled|has not been used|api key|app.?check|unauth/.test(m)) throw aiErr('not_granted');
+        throw aiErr('failed');
+      });
+    }
+    var sample = function (input, opts) { return run(input, opts, false).then(function (t) { return { text: t, truncated: false }; }); };
+    sample.json = function (input, opts) {
+      return run(input, opts, true).then(function (t) {
+        var s = t.replace(/^\s*```(?:json)?/i, '').replace(/```\s*$/, '').trim();
+        try { return JSON.parse(s); } catch (e) { throw aiErr('bad_json'); }
+      });
+    };
+    return Promise.resolve(sample);
+  };
 
   /* ---------- sign-in screen ---------- */
   var gate = null;
@@ -279,7 +339,7 @@
     nameCache[ST.uid] = n;
     var p1 = fs.setDoc(fs.doc(ST.db, 'profiles', ST.uid), { name: n }).catch(function () {});
     var cref = fs.doc(ST.db, 'clients', ST.uid);
-    var p2 = ST.admin ? Promise.resolve() : fs.getDoc(cref).then(function (s) { var d = s.exists() ? (s.data() || {}) : null; if (d && d.consent) ST.consent = d.consent; if (!ST.consent && ST.consentAt) ST.consent = { privacy: 'v1', at: ST.consentAt }; if (!d) return fs.setDoc(cref, { email: ST.user.email || '', profile: { name: n }, consent: ST.consent || null, updated: Date.now() }); if (ST.consent && !d.consent) return fs.setDoc(cref, { consent: ST.consent }, { merge: true }); }).catch(function () {});
+    var p2 = ST.admin ? Promise.resolve() : fs.getDoc(cref).then(function (s) { var d = s.exists() ? (s.data() || {}) : null; if (d && d.consent) ST.consent = d.consent; if (!ST.consent && ST.consentAt) { ST.consent = { privacy: PV, at: ST.consentAt }; logConsent(); } if (!d) return fs.setDoc(cref, { email: ST.user.email || '', profile: { name: n }, consent: ST.consent || null, updated: Date.now() }); if (ST.consent && !d.consent) return fs.setDoc(cref, { consent: ST.consent }, { merge: true }); }).catch(function () {});
     return Promise.all([p1, p2]);
   }
   function dropAdminStub() {
@@ -302,7 +362,10 @@
     }, function () { return false; });
   }
 
-  function consentGate() { if (ST.admin || ST.consent) return Promise.resolve(); var fs = FB.fs, cref = fs.doc(ST.db, 'clients', ST.uid); return fs.getDoc(cref).then(function (s) { var d = s.exists() ? (s.data() || {}) : {}; if (d.consent) ST.consent = d.consent; }, function () {}).then(function () { if (ST.consent) return; return new Promise(function (res) { show('<h1>Our privacy terms</h1><p>RespondFit now has a Privacy Policy that explains how we collect, use and protect your information, including your health and fitness data. Please read it and agree to keep using the app.</p><label class="rfcb" for="rfok"><input id="rfok" type="checkbox"><span>I have read and agree to the <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>, and I consent to RespondFit collecting my health and fitness information to provide the app.</span></label><p class="rfm" id="rfm" role="status" aria-live="polite"></p><button class="rfp" id="rfgo">Continue</button><div class="rfx"><button class="rfk" id="rfso">Sign out</button></div>'); ready$('rfso').onclick = window.RFA.signOut; ready$('rfgo').onclick = function () { if (!ready$('rfok').checked) { msg('Please tick the box to agree to the Privacy Policy.'); return; } ST.consent = { privacy: 'v1', at: Date.now() }; fs.setDoc(cref, { consent: ST.consent }, { merge: true }).catch(function () {}); res(); }; }); }); }  function proceed() {
+  var PV = 'v2';
+  function logConsent() { try { var fs = FB.fs; fs.setDoc(fs.doc(ST.db, 'clients', ST.uid, 'consents', PV), { privacy: PV, at: (ST.consent && ST.consent.at) || Date.now(), email: (ST.user && ST.user.email) || '', ua: String(navigator.userAgent || '').slice(0, 200) }).catch(function () {}); } catch (e) {} }
+  function consentOk() { return !!(ST.consent && ST.consent.privacy === PV); }
+  function consentGate() { if (ST.admin || consentOk()) return Promise.resolve(); var fs = FB.fs, cref = fs.doc(ST.db, 'clients', ST.uid); return fs.getDoc(cref).then(function (s) { var d = s.exists() ? (s.data() || {}) : {}; if (d.consent) ST.consent = d.consent; }, function () {}).then(function () { if (consentOk()) return; return new Promise(function (res) { show('<h1>We\u2019ve updated our Privacy Policy</h1><p>Our Privacy Policy now covers how we use your health and fitness data, Fit Bot (AI), notifications, and general guidance that RespondFit is not medical advice. Please read it and accept to keep using the app.</p><label class="rfcb" for="rfok"><input id="rfok" type="checkbox"><span>I have read and agree to the <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>, and I consent to RespondFit collecting my health and fitness information to provide the app.</span></label><p class="rfm" id="rfm" role="status" aria-live="polite"></p><button class="rfp" id="rfgo">Continue</button><div class="rfx"><button class="rfk" id="rfso">Sign out</button></div>'); ready$('rfso').onclick = window.RFA.signOut; ready$('rfgo').onclick = function () { if (!ready$('rfok').checked) { msg('Please tick the box to agree to the Privacy Policy.'); return; } ST.consent = { privacy: PV, at: Date.now() }; fs.setDoc(cref, { consent: ST.consent }, { merge: true }).catch(function () {}); logConsent(); res(); }; }); }); }  function proceed() {
     return checkAccess().then(function () {
       return ensureProfile().then(dropAdminStub);
     }).then(function () {
