@@ -1,12 +1,12 @@
 /* RespondFit service worker: lets the app open and run workouts without a connection. */
-const V = 'rf-v50', SHELL = ['./', 'index.html', 'rf-adapter.js', 'firebase-config.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
+const V = 'rf-v51', SHELL = ['./', 'index.html', 'rf-adapter.js', 'firebase-config.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(k => Promise.all(k.filter(x => x !== V).map(x => caches.delete(x)))).then(() => self.clients.claim())); });
 self.addEventListener('push', e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (_) { d = { notification: { body: e.data ? e.data.text() : '' } }; }
   const n = d.notification || {}, x = d.data || {};
-  e.waitUntil(self.registration.showNotification(n.title || x.title || 'RespondFit', { body: n.body || x.body || '', icon: 'icon-192.png', badge: 'icon-192.png', data: { url: x.url || (d.fcmOptions && d.fcmOptions.link) || './' } }));
+  e.waitUntil(self.registration.showNotification(n.title || x.title || 'RespondFit', { body: n.body || x.body || '', icon: 'icon-192.png', badge: 'icon-192.png', tag: n.tag || undefined, renotify: !!n.tag, data: { url: x.url || (d.fcmOptions && d.fcmOptions.link) || './' } }));
 });
 self.addEventListener('notificationclick', e => {
   e.notification.close();
