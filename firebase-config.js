@@ -20,8 +20,8 @@ window.RF_MAPBOX = { token: "pk.eyJ1IjoiamFjb2ItbWNuZWlsbDE5IiwiYSI6ImNtd2c4YjAy
 window.RF_AI = {
   on: false,
   chatModel: "gemini-3.8-flash",
-  builderModel: "gemini-3.1-pro-preview",
-  appCheckKey: "",
+  builderModel: "gemini-3.8-flash",
+  appCheckKey: "6LcBFDEuAAAAALDGAgYnTyzmVql99QI4QWnxHwnU",
   dailyChat: 40,
   dailyPlan: 6
 };
