@@ -18,7 +18,7 @@ window.RF_MAPBOX = { token: "pk.eyJ1IjoiamFjb2ItbWNuZWlsbDE5IiwiYSI6ImNtd2c4YjAy
 
 /* Fit bot and AI plans (Gemini through Firebase AI Logic). Leave on:false until the setup steps are done. */
 window.RF_AI = {
-  on: false,
+  on: true,
   chatModel: "gemini-3.8-flash",
   builderModel: "gemini-3.8-flash",
   appCheckKey: "6LcBFDEuAAAAALDGAgYnTyzmVql99QI4QWnxHwnU",
