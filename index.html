@@ -142,6 +142,33 @@ details[data-acc]>summary+*{margin-top:12px}
 .rfmv:disabled{opacity:.35}
 .dot{background:var(--accent);color:var(--on-accent);border-radius:99px;padding:0 6px;font-size:11px;margin-left:4px}
 .rest{border-top:1px solid var(--line);margin-top:10px;padding-top:10px}
+#restbar,#restbar button{white-space:nowrap}
+.xc{padding:12px 14px}.xh{display:flex;align-items:center;gap:12px}
+.xth{flex:none;width:64px;height:64px;padding:0;border:1px solid var(--line);border-radius:12px;background:var(--bg);overflow:hidden;min-height:0}.xth svg,.xth .fig{width:100%;height:100%;margin:0;max-width:none;display:block}
+.xn{flex:1;min-width:0}.xn b{font-size:18px;display:block;line-height:1.2}.xn span{font-size:14px}
+.xmore{flex:none;min-width:44px;padding:0 8px;font-size:20px;line-height:1;letter-spacing:1px;color:var(--accent-ink)}
+.xrest{display:block;background:transparent;color:var(--accent-ink);padding:6px 0;min-height:40px;margin:2px 0 6px;text-align:left}
+.xp{border-top:1px solid var(--line);margin:4px 0 10px;padding-top:10px}
+.xs{display:grid;grid-template-columns:28px 1.25fr 1fr 1fr 46px;gap:6px;align-items:center;margin-bottom:6px}.xs.nb{grid-template-columns:28px 1.4fr 1fr 46px}
+.xs input{text-align:center;font-weight:700;font-size:18px;padding:8px 2px;min-width:0}
+.xs.hd{font-size:12px;color:var(--muted);letter-spacing:.04em;text-align:center;margin-bottom:4px}
+.xs .sn{font-weight:800;text-align:center;color:var(--accent-ink)}
+.xs .pv{background:transparent;color:var(--muted);font-weight:400;font-size:13px;padding:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.xs.done input,.xs.done .pv{opacity:.55}
+.xadds{width:100%;margin-top:6px;background:var(--bg);border:0}
+.xs{grid-template-columns:36px 1.25fr 1fr 1fr 46px}.xs.nb{grid-template-columns:36px 1.4fr 1fr 46px}
+.xs .sn{min-height:34px;width:34px;height:34px;border-radius:10px;padding:0;font-size:16px;font-weight:800;justify-self:center;background:color-mix(in srgb,currentColor 14%,transparent);border:1px solid color-mix(in srgb,currentColor 35%,transparent)}
+.xs .sn.ty-n{color:var(--accent-ink)}.xs .sn.ty-w{color:#C98A00}.xs .sn.ty-f{color:#E5484D}.xs .sn.ty-d{color:#9B5DE5}.xs .sn.ty-l{color:#2F80ED}.xs .sn.ty-r{color:#12A594}
+#xtyo{position:fixed;top:0;right:0;bottom:0;left:0;z-index:800;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+.xtyb{background:var(--surface);color:var(--ink);border-radius:18px;padding:16px;width:min(360px,100%);box-shadow:0 8px 30px rgba(0,0,0,.3)}
+.xty{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.xty button{display:flex;gap:8px;align-items:center;justify-content:flex-start;min-height:40px;padding:6px 10px;background:transparent;border:1px solid color-mix(in srgb,currentColor 35%,transparent);font-weight:600;font-size:14px}
+.xty button b{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;background:color-mix(in srgb,currentColor 16%,transparent);font-size:14px}
+.xty button.on{background:color-mix(in srgb,currentColor 16%,transparent)}
+.xty button{color:inherit}.xty .ty-n{color:var(--accent-ink)}.xty .ty-w{color:#C98A00}.xty .ty-f{color:#E5484D}.xty .ty-d{color:#9B5DE5}.xty .ty-l{color:#2F80ED}.xty .ty-r{color:#12A594}
+.xstats{display:grid;grid-template-columns:repeat(3,1fr);text-align:center;gap:6px;padding:12px 8px}.xstats span{display:block;font-size:14px}.xstats b{display:block;font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.xaddb{justify-content:center;background:var(--bg);border-radius:10px;padding:12px;font-weight:600;color:var(--accent-ink);margin:6px 0 12px}
+
 .msg{max-width:80%;padding:8px 12px;border-radius:14px;background:var(--bg);align-self:flex-start;overflow-wrap:anywhere}
 .msg.me{align-self:flex-end;background:var(--accent);color:var(--on-accent)}
 </style>
@@ -8322,20 +8349,57 @@ function restStop(){const i=R.i;clearInterval(rtick);R.i=-1;if(i>=0)restShow(i,'
 function restStart(i){const s=S.sess;if(!s)return;restStop();whUnlock();try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}const t=s.ex[i].rest||60;R={i,end:Date.now()+t*1000,tot:t};rtick=setInterval(restTick,250);restTick()}
 function restTick(){if(R.i<0||!S.sess)return;const left=Math.max(0,Math.ceil((R.end-Date.now())/1000));if(left>0)restShow(R.i,fmt(left)+' left',100-left/R.tot*100,'Skip rest');else{const i=R.i;clearInterval(rtick);R.i=-1;restShow(i,'Rest over. Next set.',100,'Start rest');ding()}}
 function hist(id){let last=null,bk=0,br=0;[...S.workouts].sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id).forEach(x=>{(x.ex||[]).forEach(e=>{if(e.id!==id)return;let b=null;e.sets.forEach(t=>{if(!b||t.kg>b.kg||(t.kg===b.kg&&t.reps>b.reps))b={kg:t.kg,reps:t.reps};if(t.kg>bk)bk=t.kg;if(t.reps>br)br=t.reps});if(b)last=b})});return{last,bk,br}}
-function checkPR(i,t){const e=S.sess.ex[i],E=EX[e.id],H=hist(e.id);if(!H.last)return;const pr=E[3]?(t.kg>H.bk&&t.kg>0):t.reps>H.br;if(pr){e.pr=true;const m=document.querySelector(`[data-prm="${i}"]`);if(m)m.textContent='New best! '+(E[3]?W(t.kg)+' '+WU()+' × '+t.reps:t.reps+' '+({reps:'reps',sec:'seconds',min:'minutes'}[E[4]]))}}
-function exCard(x,i){const E=EX[x.id],u={reps:'Reps',sec:'Seconds',min:'Minutes'}[E[4]];
- const H=hist(x.id),un={reps:'reps',sec:'sec',min:'min'}[E[4]],hl=H.last?`<div class="muted" style="font-size:14px;margin:8px 0 0">Last time: ${E[3]?W(H.last.kg)+' '+WU()+' × '+H.last.reps:H.last.reps+' '+un} · Best: ${E[3]?W(H.bk)+' '+WU():H.br+' '+un}</div>`:'';
+function checkPR(i,t){if(t.t==='w')return;const e=S.sess.ex[i],E=EX[e.id],H=hist(e.id);if(!H.last)return;const pr=E[3]?(t.kg>H.bk&&t.kg>0):t.reps>H.br;if(pr){e.pr=true;const m=document.querySelector(`[data-prm="${i}"]`);if(m)m.textContent='New best! '+(E[3]?W(t.kg)+' '+WU()+' × '+t.reps:t.reps+' '+({reps:'reps',sec:'seconds',min:'minutes'}[E[4]]))}}
+let xm=-1;
+function xTyClose(){const o=document.getElementById('xtyo');if(o)o.remove();document.removeEventListener('keydown',xTyKey)}
+function xTyKey(e){if(e.key==='Escape')xTyClose()}
+function xTyOpen(key){const q=key.split(':'),i=+q[0],j=+q[1],st=S.sess&&S.sess.ex[i]&&S.sess.ex[i].sets[j];if(!st)return;xTyClose();const cur=XT[st.t]?st.t:'n';
+ const o=document.createElement('div');o.id='xtyo';o.setAttribute('role','dialog');o.setAttribute('aria-modal','true');o.setAttribute('aria-label','Set '+(j+1)+' type');
+ o.innerHTML='<div class="xtyb"><h2 style="margin:0 0 10px">Set type</h2><div class="xty">'+Object.keys(XT).map(k=>'<button type="button" class="ty-'+k+(cur===k?' on':'')+'" data-tyset="'+i+':'+j+':'+k+'"><b>'+(k==='n'?'#':XT[k][0])+'</b> '+XT[k][1]+'</button>').join('')+'</div><button type="button" class="ghost" data-tyx style="width:100%;margin-top:10px">Cancel</button></div>';
+ document.body.appendChild(o);document.addEventListener('keydown',xTyKey);const f=o.querySelector('button.on')||o.querySelector('button');if(f)f.focus()}
+const XT={n:['','Normal set'],w:['W','Warm up'],f:['F','Failure'],d:['D','Drop set'],l:['L','Left side'],r:['R','Right side']};
+const xRL=t=>t<60?t+'s':(t%60?Math.floor(t/60)+':'+String(t%60).padStart(2,'0'):(t/60)+'min');
+const XR=[30,45,60,90,120,180];
+function xVol(){const s=S.sess;return s?s.ex.reduce((a,e)=>a+(EX[e.id]&&EX[e.id][3]?e.sets.reduce((b,t)=>b+(t.done&&t.t!=='w'?(+t.kg||0)*(+t.reps||0):0),0):0),0):0}
+function xDone(){const s=S.sess;return s?s.ex.reduce((a,e)=>a+e.sets.filter(t=>t.done).length,0):0}
+function xStats(){const v=document.getElementById('xv'),n=document.getElementById('xs');if(v)v.textContent=Math.round(W(xVol())).toLocaleString()+' '+WU();if(n)n.textContent=xDone()}
+function exCard(x,i){const E=EX[x.id],u={reps:'Reps',sec:'Seconds',min:'Minutes'}[E[4]],bw=!E[3];
+ const H=hist(x.id),un={reps:'reps',sec:'sec',min:'min'}[E[4]],hl=H.last?`<div class="muted" style="font-size:14px;margin:0 0 6px">Last time: ${E[3]?W(H.last.kg)+' '+WU()+' × '+H.last.reps:H.last.reps+' '+un} · Best: ${E[3]?W(H.bk)+' '+WU():H.br+' '+un}</div>`:'';
  const tip=INFO[x.id]?(()=>{const[a,b]=INFO[x.id].split('#');return`<details class="how"><summary><span>How to do it</span><span class="muted">▾</span></summary><ol class="muted" style="margin:8px 0;padding-left:20px">${a.split('|').map(t=>`<li>${t}</li>`).join('')}</ol><p style="margin:0 0 4px"><b>Common mistakes</b></p><ul class="muted" style="margin:0 0 6px;padding-left:20px">${b.split('|').map(t=>`<li>${t}</li>`).join('')}</ul><p class="muted" style="font-size:13px;margin:0">Stop if you feel sharp pain.</p></details>`})():'';
- return`<section class="card"><div class="row" style="align-items:center"><div><h2 style="margin:0">${E[0]}</h2><span class="muted" style="font-size:14px">${E[2]} · Primary muscle: <b>${muscle(x.id)}</b></span></div><span class="row" style="gap:6px;flex:none"><button class="ghost small rfmv" data-mv="${i}:-1" aria-label="Move ${E[0]} up" ${i===0?'disabled':''}>↑</button><button class="ghost small rfmv" data-mv="${i}:1" aria-label="Move ${E[0]} down" ${S.sess&&i===S.sess.ex.length-1?'disabled':''}>↓</button><button class="ghost small" data-swap="${i}">Swap</button></span></div>${hl}${rfSpark(x.id)}${rfPrev(x,i)}<div data-prm="${i}" role="status" style="font-weight:600;color:var(--accent-ink);margin-top:4px">${x.pr?'New best this session':''}</div>
+ const L=rfLast(x.id),pv=j=>{const p=L&&L[j];return p?(E[3]?W(p.kg)+WU()+' × '+p.reps:p.reps+' '+un):'–'};
+ const th=fig3(x.id)||fig(E[1],EQ(x.id));let nn=0;const tl=x.sets.map(t=>{const k=XT[t.t]?t.t:'n';if(k==='n')nn++;return[k,k==='n'?String(nn):XT[k][0]]});
+ return`<section class="card xc"><div class="xh"><button type="button" class="xth" data-more="${i}" aria-label="Show demo and options for ${E[0]}" aria-expanded="${xm===i}">${th}</button><div class="xn"><b>${E[0]}</b><span class="muted">${muscle(x.id)}</span></div><button type="button" class="ghost xmore" data-more="${i}" aria-label="More options for ${E[0]}" aria-expanded="${xm===i}">•••</button></div>
+<div data-prm="${i}" role="status" style="font-weight:600;color:var(--accent-ink);margin-top:4px">${x.pr?'New best this session':''}</div>
+<button type="button" class="xrest" data-rc="${i}" aria-label="Rest timer, tap to change">⏱ Rest timer: <span data-rcv="${i}">${xRL(x.rest||60)}</span></button>
+<div data-xp="${i}" class="xp" ${xm===i?'':'hidden'}>${hl}${rfSpark(x.id)}
 ${sw===i?`<div class="stack" style="margin:10px 0"><p class="muted" style="margin:0">Swap for another ${E[2].toLowerCase()} exercise:</p><div data-pk="${i}" data-pg0="${E[2]}"></div></div>`:''}
-<details data-d="${i}" ${op[i]===false?'':'open'}><summary><span>Watch demo</span><span class="muted">▾</span></summary>${figX(x.id)}</details>${tip}
-<div class="set muted" style="font-size:14px"><span>Set</span><span>${E[3]?WU():''}</span><span>${u}</span><span></span></div>
-${x.sets.map((s,j)=>`<div class="set ${s.done?'done':''}"><span>${j+1}</span>${E[3]?`<input type="number" inputmode="decimal" step="0.5" min="0" value="${W(s.kg)}" data-e="${i}" data-s="${j}" data-k="kg" aria-label="Set ${j+1} weight in ${IMP()?'pounds':'kilograms'}">`:'<span class="muted">Body</span>'}<input type="number" inputmode="numeric" min="0" value="${s.reps}" data-e="${i}" data-s="${j}" data-k="reps" aria-label="Set ${j+1} ${u.toLowerCase()}"><button class="chk ${s.done?'on':'ghost'}" data-chk="${i}:${j}" aria-label="Mark set ${j+1} done">✓</button></div>`).join('')}
-<div class="rest"><div class="row" style="align-items:center"><span class="muted">Rest between sets</span><span class="row" style="gap:6px;align-items:center"><button class="ghost small" data-rd="${i}:-15" aria-label="Shorten rest by 15 seconds">−15s</button><b data-rv="${i}" role="status">${fmt(x.rest||60)}</b><button class="ghost small" data-rd="${i}:15" aria-label="Lengthen rest by 15 seconds">+15s</button></span></div><div class="bar" style="margin:10px 0 6px"><i data-rb="${i}" style="width:0"></i></div><div class="row" style="align-items:center"><span data-rt="${i}" class="muted" role="timer">Ready</span><button class="small" data-rs="${i}">Start rest</button></div><label style="display:flex;gap:8px;align-items:center;margin:10px 0 0;font-size:14px"><input type="checkbox" data-ra style="width:auto;min-height:0" ${S.sess&&S.sess.auto===false?'':'checked'}> Start automatically when I tick a set</label></div>
-<div class="grid"><button class="ghost small" data-add="${i}">Add set</button><button class="ghost small" data-rm="${i}">Remove set</button></div></section>`}
+<div data-xdemo="${i}">${xm===i?figX(x.id):''}</div>${tip}
+<div class="grid" style="margin-top:10px"><button class="ghost small rfmv" data-mv="${i}:-1" aria-label="Move ${E[0]} up" ${i===0?'disabled':''}>↑ Move up</button><button class="ghost small rfmv" data-mv="${i}:1" aria-label="Move ${E[0]} down" ${S.sess&&i===S.sess.ex.length-1?'disabled':''}>↓ Move down</button><button class="ghost small" data-swap="${i}">Swap exercise</button><button class="ghost small" data-rm="${i}">Remove last set</button></div>
+<div class="rest"><div class="row" style="align-items:center"><span data-rt="${i}" class="muted" role="timer">Ready</span><button class="small" data-rs="${i}">Start rest</button></div><div class="bar" style="margin:10px 0 6px"><i data-rb="${i}" style="width:0"></i></div><span data-rv="${i}" hidden>${fmt(x.rest||60)}</span><label style="display:flex;gap:8px;align-items:center;margin:6px 0 0;font-size:14px"><input type="checkbox" data-ra style="width:auto;min-height:0" ${S.sess&&S.sess.auto===false?'':'checked'}> Start rest automatically when I tick a set</label></div></div>
+<div class="xs hd${bw?' nb':''}"><span>Set</span><span>Previous</span>${bw?'':`<span>${WU().toUpperCase()}</span>`}<span>${u}</span><span></span></div>
+${x.sets.map((s,j)=>`<div class="xs${bw?' nb':''} ${s.done?'done':''}"><button type="button" class="sn ty-${tl[j][0]}" data-ty="${i}:${j}" aria-label="Set ${j+1}: ${XT[tl[j][0]][1]}. Tap to change" aria-haspopup="dialog">${tl[j][1]}</button><button type="button" class="pv" data-pv="${i}:${j}" ${L&&L[j]?'':'disabled'} aria-label="Use previous set ${pv(j)}">${pv(j)}</button>${bw?'':`<input type="number" inputmode="decimal" step="0.5" min="0" value="${W(s.kg)}" data-e="${i}" data-s="${j}" data-k="kg" aria-label="Set ${j+1} weight in ${IMP()?'pounds':'kilograms'}">`}<input type="number" inputmode="numeric" min="0" value="${s.reps}" data-e="${i}" data-s="${j}" data-k="reps" aria-label="Set ${j+1} ${u.toLowerCase()}"><button class="chk ${s.done?'on':'ghost'}" data-chk="${i}:${j}" aria-label="Mark set ${j+1} done">✓</button></div>`).join('')}
+<button type="button" class="ghost xadds" data-add="${i}">+ Add set</button></section>`}
 function sessionView(){const s=S.sess;if(!s){page='workouts';return workouts()}
- return`<div class="row" id="wkhead" style="align-items:center"><button class="ghost small" data-go="workouts">← Back</button><span class="big" id="el" style="font-size:28px">${fmt(Math.floor((Date.now()-s.start)/1000))}</span><button class="small" id="fin">Finish</button></div><h1>${esc(s.name)}</h1>${s.ex.map(exCard).join('')}
-<section class="card"><h2>Add an exercise</h2><div id="addpk" data-pg0=""></div></section><button class="ghost" id="disc">Discard workout</button>`}
+ return`<div class="row" id="wkhead" style="align-items:center"><button class="ghost small" data-go="workouts" aria-label="Back to workouts">‹ Back</button><button class="small" id="fin">Finish</button></div><h1 style="margin:12px 0 8px">${esc(s.name)}</h1>
+<section class="card xstats" aria-label="Workout totals"><div><span class="muted">Duration</span><b id="el" style="color:var(--accent-ink)">${fmt(Math.floor((Date.now()-s.start)/1000))}</b></div><div><span class="muted">Volume</span><b id="xv">${Math.round(W(xVol())).toLocaleString()} ${WU()}</b></div><div><span class="muted">Sets</span><b id="xs">${xDone()}</b></div></section>${s.ex.map(exCard).join('')}
+<details class="xadd"><summary class="xaddb">+ Add exercise</summary><div id="addpk" data-pg0=""></div></details><button class="ghost" id="disc">Discard workout</button>`}
+document.addEventListener('click',function(e){var t=e.target&&e.target.closest?e.target:null;if(!t)return;
+ if(t.closest('[data-mv]')){xm=-1;return}
+ var b=t.closest('[data-more]');if(b&&S.sess){var i=+b.dataset.more,was=xm===i;document.querySelectorAll('[data-xp]').forEach(function(p){p.hidden=true});document.querySelectorAll('[data-more]').forEach(function(m){m.setAttribute('aria-expanded','false')});
+  if(was){xm=-1;return}
+  xm=i;var p=document.querySelector('[data-xp="'+i+'"]');if(p){p.hidden=false;var d=p.querySelector('[data-xdemo]');if(d&&!d.firstChild&&S.sess.ex[i])d.innerHTML=figX(S.sess.ex[i].id)}
+  document.querySelectorAll('[data-more="'+i+'"]').forEach(function(m){m.setAttribute('aria-expanded','true')});return}
+ b=t.closest('[data-rc]');if(b&&S.sess){var i2=+b.dataset.rc,ex=S.sess.ex[i2],cur=ex.rest||60,k=XR.indexOf(cur),n=k>=0?XR[(k+1)%XR.length]:(XR.find(function(v){return v>cur})||XR[0]);ex.rest=n;
+  document.querySelectorAll('[data-rcv="'+i2+'"]').forEach(function(v){v.textContent=xRL(n)});var rv=document.querySelector('[data-rv="'+i2+'"]');if(rv)rv.textContent=fmt(n);
+  try{if(R.i==i2){R.end+=(n-cur)*1000;R.tot+=n-cur;restTick()}}catch(x){}save();return}
+ b=t.closest('[data-pv]');if(b&&S.sess&&!b.disabled){var q=b.dataset.pv.split(':'),i3=+q[0],j3=+q[1],ex3=S.sess.ex[i3],L=ex3&&rfLast(ex3.id),p3=L&&L[j3],st=ex3&&ex3.sets[j3];if(!p3||!st)return;st.kg=p3.kg;st.reps=p3.reps;
+  var kk=document.querySelector('input[data-e="'+i3+'"][data-s="'+j3+'"][data-k="kg"]'),rr=document.querySelector('input[data-e="'+i3+'"][data-s="'+j3+'"][data-k="reps"]');if(kk)kk.value=W(p3.kg);if(rr)rr.value=p3.reps;save();return}
+ b=t.closest('[data-ty]');if(b&&S.sess){xTyOpen(b.dataset.ty);return}
+ b=t.closest('[data-tyx]');if(b){xTyClose();return}
+ if(t.id==='xtyo'){xTyClose();return}
+ b=t.closest('[data-tyset]');if(b&&S.sess){var q2=b.dataset.tyset.split(':'),st2=S.sess.ex[+q2[0]]&&S.sess.ex[+q2[0]].sets[+q2[1]];if(st2){if(q2[2]==='n')delete st2.t;else st2.t=q2[2]}xTyClose();save();render();return}
+ if(t.closest('[data-chk]'))setTimeout(xStats,0)});
+document.addEventListener('change',function(e){if(e.target&&e.target.matches&&e.target.matches('input[data-k]'))setTimeout(xStats,0)});
 function wireSession(){const A=$('#app'),s=S.sess;if(!s)return;
  tick=setInterval(()=>{const e=$('#el');if(e)e.textContent=fmt(Math.floor((Date.now()-s.start)/1000))},1000);
  A.querySelectorAll('details[data-d]').forEach(d=>d.ontoggle=()=>{op[d.dataset.d]=d.open});
@@ -8352,7 +8416,7 @@ function wireSession(){const A=$('#app'),s=S.sess;if(!s)return;
  const swapTo=(i,k)=>{const e=s.ex[i],o=EX[e.id][4],n=EX[k];e.id=k;e.sets.forEach(t=>{if(!n[3])t.kg=0;if(n[4]!==o){t.reps=DEF[n[4]];t.done=false}});sw=-1;save();render()};
  A.querySelectorAll('[data-pk]').forEach(h=>pickUI(h,h.dataset.pg0,'Swap',k=>swapTo(h.dataset.pk,k)));
  const ap=$('#addpk');if(ap)pickUI(ap,'','Add',k=>{const n=EX[k];s.ex.push({id:k,sets:Array.from({length:n[4]==='min'?1:3},()=>({kg:0,reps:DEF[n[4]],done:false}))});save();render();scrollTo(0,document.body.scrollHeight)});
- $('#fin').onclick=()=>{const d=s.ex.reduce((a,e)=>a+e.sets.filter(t=>t.done).length,0);if(!d&&!confirm('No sets are marked done. Finish anyway?'))return;S.workouts.push({id:Date.now(),date:today(),name:s.name,mins:Math.max(1,Math.round((Date.now()-s.start)/60000)),sets:d,prs:s.ex.reduce((a,e)=>a+(e.pr?1:0),0),ex:s.ex.map(e=>({id:e.id,sets:e.sets.filter(t=>t.done).map(t=>({kg:+(+t.kg||0).toFixed(2),reps:+t.reps||0}))})).filter(e=>e.sets.length)});const W0=S.workouts[S.workouts.length-1];delete S.sess;save();page='home';render();scrollTo(0,0);try{cgShow({name:W0.name,mins:W0.mins,sets:W0.sets,pr:W0.prs,vol:cgVol(W0.ex)})}catch(e){}};
+ $('#fin').onclick=()=>{const d=s.ex.reduce((a,e)=>a+e.sets.filter(t=>t.done).length,0);if(!d&&!confirm('No sets are marked done. Finish anyway?'))return;S.workouts.push({id:Date.now(),date:today(),name:s.name,mins:Math.max(1,Math.round((Date.now()-s.start)/60000)),sets:d,prs:s.ex.reduce((a,e)=>a+(e.pr?1:0),0),ex:s.ex.map(e=>({id:e.id,sets:e.sets.filter(t=>t.done).map(t=>Object.assign({kg:+(+t.kg||0).toFixed(2),reps:+t.reps||0},t.t&&t.t!=='n'?{t:t.t}:{}))})).filter(e=>e.sets.length)});const W0=S.workouts[S.workouts.length-1];delete S.sess;save();page='home';render();scrollTo(0,0);try{cgShow({name:W0.name,mins:W0.mins,sets:W0.sets,pr:W0.prs,vol:cgVol(W0.ex)})}catch(e){}};
  $('#disc').onclick=()=>{if(confirm('Discard this workout? Nothing will be saved.')){delete S.sess;save();page='workouts';render()}}}
 
 let B=null;
