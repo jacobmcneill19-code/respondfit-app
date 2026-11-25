@@ -8479,7 +8479,7 @@ function subs(id){PL={};CP={};if(ISCOACH)unsubs.push(DB.collection('clients/'+id
 function openClient(){$('#cbody').innerHTML=`<button class='ghost small' id='cback'>← All clients</button><div id='cinfo'></div><section class='card' id='csub'></section><section class='card'><h2>Build a workout</h2><div id='bld' class='stack'></div></section><section class='card'><h2>Assigned workouts</h2><div id='plans'></div></section>`;$('#cback').onclick=()=>{cid=null;render()};drawInfo();drawBld();subs(cid);drawCSub();unsubs.push(DB.doc('clients/'+cid+'/billing/status').onSnapshot(sn=>{CBS[cid]=(sn&&sn.data&&sn.data())||null;drawCSub()},()=>{}))}
 function coachWire0(){unsubAll();CBW={};if(ISCOACH){unsubs.push(DB.collection('clients').onSnapshot(async s=>{CL={};s.docs.forEach(d=>{CL[d.id]=d.data()});await nm(Object.keys(CL));watchCB();cid?drawInfo():drawList()},()=>{const b=$('#cbody');if(b)b.innerHTML=`<p class='muted'>Client data can’t be reached right now.</p>`}));unsubs.push(DB.collection('templates').orderBy('ts','desc').limit(50).onSnapshot(sn=>{TP={};sn.docs.forEach(d=>{TP[d.id]=d.data()});if(cid)fillTP();else drawList()},()=>{}));if(cid)openClient()}else{subs(UID);drawSync();push()}}
 /* ===== Reminders (push notifications). Phase 1: only the coach sees this. Set PUSH_ON=true to show it to every member. ===== */
-const PUSH_ON=false;
+const PUSH_ON=true;
 const PSHD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const PSHDEF={wk:true,wkT:'17:30',wkD:[1,2,3,4,5],mb:false,mbT:'09:30',ml:false,mlT:'13:30',md:false,mdT:'19:30',ww:true,wwD:0,wwT:'18:00',cm:true,lk:true,coach:true};
 function pshGet(){return Object.assign({},PSHDEF,S.pushPrefs||{})}
