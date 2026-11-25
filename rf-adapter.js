@@ -165,7 +165,7 @@
     if (aiMod) return aiMod;
     aiMod = Promise.all([import(AIBASE + 'firebase-app.js'), import(AIBASE + 'firebase-ai.js')]).then(function (m) {
       var app; try { app = m[0].getApp('rf-ai'); } catch (e) { app = m[0].initializeApp(C, 'rf-ai'); }
-      var go = A.appCheckKey ? import(AIBASE + 'firebase-app-check.js').then(function (c) { c.initializeAppCheck(app, { provider: new c.ReCaptchaV3Provider(A.appCheckKey), isTokenAutoRefreshEnabled: true }); }) : Promise.resolve();
+      var go = A.appCheckKey ? import(AIBASE + 'firebase-app-check.js').then(function (c) { c.initializeAppCheck(app, { provider: new c.ReCaptchaEnterpriseProvider(A.appCheckKey), isTokenAutoRefreshEnabled: true }); }) : Promise.resolve();
       return go.then(function () { return { b: m[1], ai: m[1].getAI(app, { backend: new m[1].GoogleAIBackend() }) }; });
     });
     aiMod.catch(function () { aiMod = null; });
@@ -362,7 +362,7 @@
     }, function () { return false; });
   }
 
-  var PV = 'v2';
+  var PV = 'v2.1';
   function logConsent() { try { var fs = FB.fs; fs.setDoc(fs.doc(ST.db, 'clients', ST.uid, 'consents', PV), { privacy: PV, at: (ST.consent && ST.consent.at) || Date.now(), email: (ST.user && ST.user.email) || '', ua: String(navigator.userAgent || '').slice(0, 200) }).catch(function () {}); } catch (e) {} }
   function consentOk() { return !!(ST.consent && ST.consent.privacy === PV); }
   function consentGate() { if (ST.admin || consentOk()) return Promise.resolve(); var fs = FB.fs, cref = fs.doc(ST.db, 'clients', ST.uid); return fs.getDoc(cref).then(function (s) { var d = s.exists() ? (s.data() || {}) : {}; if (d.consent) ST.consent = d.consent; }, function () {}).then(function () { if (consentOk()) return; return new Promise(function (res) { show('<h1>We\u2019ve updated our Privacy Policy</h1><p>Our Privacy Policy now covers how we use your health and fitness data, Fit Bot (AI), notifications, and general guidance that RespondFit is not medical advice. Please read it and accept to keep using the app.</p><label class="rfcb" for="rfok"><input id="rfok" type="checkbox"><span>I have read and agree to the <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>, and I consent to RespondFit collecting my health and fitness information to provide the app.</span></label><p class="rfm" id="rfm" role="status" aria-live="polite"></p><button class="rfp" id="rfgo">Continue</button><div class="rfx"><button class="rfk" id="rfso">Sign out</button></div>'); ready$('rfso').onclick = window.RFA.signOut; ready$('rfgo').onclick = function () { if (!ready$('rfok').checked) { msg('Please tick the box to agree to the Privacy Policy.'); return; } ST.consent = { privacy: PV, at: Date.now() }; fs.setDoc(cref, { consent: ST.consent }, { merge: true }).catch(function () {}); logConsent(); res(); }; }); }); }  function proceed() {
