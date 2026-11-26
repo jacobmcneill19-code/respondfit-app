@@ -56,6 +56,14 @@
         if (!ST.uid) return Promise.resolve();
         return FB.fs.setDoc(FB.fs.doc(ST.db, 'pushState', ST.uid), { d: String(o.d || '').slice(0, 10), B: !!o.B, L: !!o.L, D: !!o.D, t: Date.now() });
       },
+      rest: function (end) {
+        if (!ST.uid || !end) return Promise.resolve();
+        return FB.fs.setDoc(FB.fs.doc(ST.db, 'pushRest', ST.uid), { end: Math.round(+end), t: Date.now() }).catch(function () {});
+      },
+      restClear: function () {
+        if (!ST.uid) return Promise.resolve();
+        return FB.fs.deleteDoc(FB.fs.doc(ST.db, 'pushRest', ST.uid)).catch(function () {});
+      },
       queue: function (o) {
         if (!ST.uid) return Promise.reject(new Error('signin'));
         return FB.fs.addDoc(FB.fs.collection(ST.db, 'pushQueue'), { title: String(o.title || '').slice(0, 60), body: String(o.body || '').slice(0, 160), to: o.to === 'all' ? 'all' : 'uid:' + ST.uid, by: ST.uid, t: Date.now() });
@@ -65,6 +73,7 @@
         try { tok = localStorage.getItem('rf_push_' + ST.uid) || ''; localStorage.removeItem('rf_push_' + ST.uid); } catch (e) {}
         var p = tok ? FB.fs.deleteDoc(FB.fs.doc(ST.db, 'pushTokens', tok)).catch(function () {}) : Promise.resolve();
         p = p.then(function () { return FB.fs.deleteDoc(FB.fs.doc(ST.db, 'pushState', ST.uid)).catch(function () {}); });
+        p = p.then(function () { return FB.fs.deleteDoc(FB.fs.doc(ST.db, 'pushRest', ST.uid)).catch(function () {}); });
         return p.then(function () { return import(BASE + 'firebase-messaging.js'); }).then(function (M) { return M.deleteToken(M.getMessaging(ST.fapp)); }).catch(function () {});
       }
     },
