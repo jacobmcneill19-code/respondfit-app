@@ -25,6 +25,7 @@
     },
     push: {
       info: function () {
+        if (window.RFNATIVE) { var ntk = ''; try { ntk = localStorage.getItem('rf_push_' + (ST.uid || '')) || ''; } catch (e) {} var npm = window.RFNATIVE.permission || 'default'; return { supported: true, ios: false, standalone: true, needsInstall: false, permission: npm, on: npm === 'granted' ? ntk : '' }; }
         var ua = navigator.userAgent, ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         var sa = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
         var sup = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window, tok = '';
@@ -33,6 +34,7 @@
         return { supported: sup, ios: ios, standalone: sa, needsInstall: sup && ios && !sa, permission: perm, on: perm === 'granted' ? tok : '' };
       },
       enable: function () {
+        if (window.RFNATIVE) return window.RFNATIVE.enable().then(function (tok) { return FB.fs.setDoc(FB.fs.doc(ST.db, 'pushTokens', tok), { uid: ST.uid, ua: 'RespondFit-Android', t: Date.now() }).then(function () { try { localStorage.setItem('rf_push_' + ST.uid, tok); } catch (e) {} return tok; }); });
         if (!C.vapidKey) return Promise.reject(new Error('novapid'));
         return Notification.requestPermission().then(function (p) {
           if (p !== 'granted') throw new Error('denied');
@@ -50,7 +52,7 @@
       setPrefs: function (tok, prefs) {
         if (!tok || !ST.uid) return Promise.resolve();
         var tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
-        return FB.fs.setDoc(FB.fs.doc(ST.db, 'pushTokens', tok), { uid: ST.uid, ua: navigator.userAgent.slice(0, 120), t: Date.now(), prefs: Object.assign({ tz: tz }, prefs) }, { merge: true });
+        return FB.fs.setDoc(FB.fs.doc(ST.db, 'pushTokens', tok), { uid: ST.uid, ua: window.RFNATIVE ? 'RespondFit-Android' : navigator.userAgent.slice(0, 120), t: Date.now(), prefs: Object.assign({ tz: tz }, prefs) }, { merge: true });
       },
       setState: function (o) {
         if (!ST.uid) return Promise.resolve();
@@ -74,6 +76,7 @@
         var p = tok ? FB.fs.deleteDoc(FB.fs.doc(ST.db, 'pushTokens', tok)).catch(function () {}) : Promise.resolve();
         p = p.then(function () { return FB.fs.deleteDoc(FB.fs.doc(ST.db, 'pushState', ST.uid)).catch(function () {}); });
         p = p.then(function () { return FB.fs.deleteDoc(FB.fs.doc(ST.db, 'pushRest', ST.uid)).catch(function () {}); });
+        if (window.RFNATIVE) return p.then(function () { return window.RFNATIVE.disable(); }).catch(function () {});
         return p.then(function () { return import(BASE + 'firebase-messaging.js'); }).then(function (M) { return M.deleteToken(M.getMessaging(ST.fapp)); }).catch(function () {});
       }
     },
